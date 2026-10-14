@@ -1,0 +1,2984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CineOptics 3D Studio — Simulador Profesional de Óptica, Planos y Blocking</title>
+<style>
+  :root {
+    --bg-app: #090b10;
+    --bg-dock: #10141d;
+    --bg-drawer: #141923;
+    --bg-card: #1a2130;
+    --bg-input: #0d1118;
+    --border: #242e42;
+    --border-hi: #3b4c6b;
+    --text-main: #edf2f7;
+    --text-muted: #8b9bb4;
+    --accent: #f59e0b;
+    --accent-hi: #fbbf24;
+    --cyan: #06b6d4;
+    --green: #10b981;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+  }
+
+  body {
+    background: var(--bg-app);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TOP APPLICATION BAR (PHOTOSHOP / DAVINCI STYLE) */
+  .top-bar {
+    height: 44px;
+    background: #0c1017;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    flex-shrink: 0;
+    z-index: 30;
+  }
+
+  .brand-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-pill {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #05070a;
+    font-family: var(--font-mono);
+    font-weight: 800;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.6px;
+  }
+
+  .brand-title {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: #fff;
+  }
+
+  /* CONTEXTUAL OPTIONS BAR IN TOP HEADER */
+  .quick-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .quick-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    padding-right: 8px;
+    border-right: 1px solid var(--border);
+  }
+  .quick-item:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+  .quick-item strong {
+    color: var(--accent-hi);
+  }
+
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* MAIN STUDIO WORKSPACE */
+  .studio-body {
+    flex: 1;
+    display: flex;
+    height: calc(100vh - 44px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* LEFT PHOTOSHOP-STYLE ICON DOCK */
+  .tool-dock {
+    width: 54px;
+    background: var(--bg-dock);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 6px;
+    z-index: 25;
+    flex-shrink: 0;
+  }
+
+  .dock-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    gap: 2px;
+  }
+
+  .dock-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .dock-btn span {
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  .dock-btn:hover {
+    background: var(--bg-card);
+    color: #fff;
+  }
+
+  .dock-btn.active {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: var(--accent);
+    color: var(--accent-hi);
+  }
+
+  .dock-divider {
+    width: 28px;
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
+  }
+
+  /* COLLAPSIBLE CONTEXTUAL TOOL DRAWER (OPENS ONLY FOR SELECTED TOOL) */
+  .tool-drawer {
+    width: 320px;
+    background: var(--bg-drawer);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.18s ease, opacity 0.15s ease;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+
+  .tool-drawer.collapsed {
+    width: 0;
+    opacity: 0;
+    border-right: none;
+    pointer-events: none;
+  }
+
+  .drawer-header {
+    height: 42px;
+    padding: 0 14px;
+    background: #10151f;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .drawer-title {
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .drawer-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+  }
+  .drawer-close:hover {
+    color: #fff;
+  }
+
+  .drawer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .drawer-content::-webkit-scrollbar {
+    width: 5px;
+  }
+  .drawer-content::-webkit-scrollbar-thumb {
+    background: var(--border-hi);
+    border-radius: 3px;
+  }
+
+  .tool-pane {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tool-pane.active {
+    display: flex;
+  }
+
+  /* CARDS & ACCORDIONS INSIDE DRAWER */
+  .group-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 11px 12px;
+  }
+
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 9px;
+  }
+
+  .group-header .tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--cyan);
+    background: rgba(6, 182, 212, 0.14);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: none;
+  }
+
+  .ctrl {
+    margin-bottom: 10px;
+  }
+  .ctrl:last-child {
+    margin-bottom: 0;
+  }
+
+  .ctrl-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    color: #cbd5e1;
+    margin-bottom: 5px;
+  }
+
+  .ctrl-val {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-hi);
+    font-weight: 600;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    cursor: grab;
+  }
+
+  input[type="number"], select, input[type="text"] {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 7px;
+    border-radius: 4px;
+    outline: none;
+  }
+  input[type="number"]:focus, select:focus, input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  select {
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .num-box {
+    width: 64px;
+    text-align: right;
+  }
+
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+
+  .pill-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.12s;
+  }
+  .pill-btn:hover {
+    border-color: var(--border-hi);
+    color: #fff;
+  }
+  .pill-btn.active {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: var(--accent);
+    color: var(--accent-hi);
+    font-weight: 700;
+  }
+  .pill-btn.cyan.active {
+    background: rgba(6, 182, 212, 0.18);
+    border-color: var(--cyan);
+    color: #22d3ee;
+  }
+  .pill-btn.green.active {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: var(--green);
+    color: #34d399;
+  }
+
+  .btn-action {
+    background: var(--accent);
+    color: #070a0f;
+    border: none;
+    font-weight: 700;
+    font-size: 11.5px;
+    padding: 6px 11px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-action:hover {
+    background: var(--accent-hi);
+  }
+
+  .btn-ghost {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-hi);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent-hi);
+  }
+
+  /* CENTER VIEWPORT STAGE */
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #05070a;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* VIEW MODE SWITCHER BAR */
+  .stage-subbar {
+    height: 36px;
+    background: rgba(16, 20, 29, 0.92);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    z-index: 15;
+  }
+
+  .view-Mode-group {
+    display: flex;
+    gap: 4px;
+  }
+
+  .mode-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .mode-tab:hover {
+    color: #fff;
+    background: var(--bg-card);
+  }
+  .mode-tab.active {
+    background: rgba(6, 182, 212, 0.16);
+    border-color: var(--cyan);
+    color: #22d3ee;
+  }
+
+  .canvas-area {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #main-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  #main-canvas:active {
+    cursor: grabbing;
+  }
+
+  /* FLOATING MINIMALIST TELEMETRY PILL (BOTTOM CENTER) */
+  .floating-telemetry {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 14, 22, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(8px);
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    z-index: 12;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  .ft-metric {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ft-metric span {
+    color: var(--text-muted);
+  }
+  .ft-metric strong {
+    color: #fff;
+  }
+  .ft-metric strong.hi {
+    color: var(--accent-hi);
+  }
+  .ft-metric strong.ok {
+    color: var(--green);
+  }
+
+  /* FLOATING MINI-MAP / BLOCKING RADAR (TOP RIGHT OF CANVAS, COLLAPSIBLE) */
+  .pip-radar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 245px;
+    background: rgba(12, 16, 24, 0.90);
+    border: 1px solid var(--border-hi);
+    border-radius: 8px;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.65);
+    z-index: 14;
+    transition: height 0.18s ease, width 0.18s ease;
+  }
+
+  .pip-radar.minimized {
+    height: 30px !important;
+    width: 175px;
+  }
+
+  .pip-header {
+    height: 30px;
+    padding: 0 10px;
+    background: rgba(20, 26, 38, 0.95);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: #cbd5e1;
+    cursor: pointer;
+  }
+
+  .pip-body {
+    height: 175px;
+    position: relative;
+  }
+
+  #pip-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: pointer;
+  }
+
+  /* CHARACTER CARDS IN MULTI-CHARACTER MANAGER */
+  .char-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .char-item {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 9px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .char-item:hover {
+    border-color: var(--border-hi);
+  }
+
+  .char-item.selected {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: var(--accent);
+  }
+
+  .char-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .char-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  .char-name {
+    font-weight: 600;
+    font-size: 11.5px;
+    color: #fff;
+  }
+
+  .char-dist-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .char-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mini-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .mini-btn:hover {
+    color: #fff;
+    border-color: var(--cyan);
+  }
+  .mini-btn.focused {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--green);
+    color: #34d399;
+    font-weight: 700;
+  }
+
+  /* LOCATION CARDS */
+  .loc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .loc-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
+  }
+  .loc-card:hover {
+    border-color: var(--border-hi);
+  }
+  .loc-card.active {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: var(--cyan);
+  }
+  .loc-card-title {
+    font-weight: 700;
+    font-size: 11px;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  .loc-card-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* SHOT LIST THUMBNAILS */
+  .shot-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px;
+    display: grid;
+    grid-template-columns: 78px 1fr;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 6px;
+  }
+  .shot-card:hover {
+    border-color: var(--accent);
+  }
+  .shot-thumb {
+    width: 78px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border-hi);
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER BAR -->
+<header class="top-bar">
+  <div class="brand-area">
+    <span class="logo-pill">CINEOPTICS 3D</span>
+    <span class="brand-title">Estudio Óptico &amp; Blocking Multi-Personaje</span>
+  </div>
+
+  <!-- QUICK READOUT BAR -->
+  <div class="quick-bar">
+    <div class="quick-item">Plano: <strong id="qb-shot">MCU</strong></div>
+    <div class="quick-item">Cámara: <strong id="qb-sensor">Full Frame</strong></div>
+    <div class="quick-item">Óptica: <strong id="qb-lens">50mm T1.8</strong></div>
+    <div class="quick-item">Foco (S₁): <strong id="qb-focus">1.85 m</strong></div>
+    <div class="quick-item">DoF: <strong id="qb-dof">14.2 cm</strong></div>
+    <div class="quick-item">Actores: <strong id="qb-chars">2 en escena</strong></div>
+  </div>
+
+  <div class="top-actions">
+    <button class="btn-ghost" id="btn-demo-vertigo" title="Alterna entre 24mm y 135mm compensando la distancia para ver la compresión del fondo">⚡ Compresión 24 vs 135mm</button>
+    <button class="btn-ghost" id="btn-reset-all">↺ Reset</button>
+    <button class="btn-action" id="btn-capture-shot">+ Capturar Plano</button>
+  </div>
+</header>
+
+<!-- STUDIO WORKSPACE -->
+<div class="studio-body">
+
+  <!-- LEFT PHOTOSHOP-STYLE ICON DOCK -->
+  <nav class="tool-dock" id="tool-dock">
+    <button class="dock-btn active" data-pane="pane-framing" title="1. Escala de Plano y Composición">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14M3 10h18M3 14h18"/></svg>
+      <span>Planos</span>
+    </button>
+
+    <button class="dock-btn" data-pane="pane-optics" title="2. Lentes, Distancia Focal, Apertura y Carácter Óptico">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3l3 5M21 12l-5 3M12 21l-3-5M3 12l5-3"/></svg>
+      <span>Óptica</span>
+    </button>
+
+    <button class="dock-btn" data-pane="pane-focus" title="3. Enfoque (1st AC), Rack Focus, DoF y Fórmulas">
+      <svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Foco/AC</span>
+    </button>
+
+    <button class="dock-btn" data-pane="pane-actors" title="4. Personajes en Escena (Añadir, Mover y Posar Actores)">
+      <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Actores</span>
+    </button>
+
+    <button class="dock-btn" data-pane="pane-locations" title="5. Locaciones 3D, Atmósfera e Iluminación">
+      <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9v.01M9 13v.01M9 17v.01"/></svg>
+      <span>Locación</span>
+    </button>
+
+    <button class="dock-btn" data-pane="pane-rig" title="6. Posición de Cámara, Ángulos y Movimiento de Rig">
+      <svg viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      <span>Cámara</span>
+    </button>
+
+    <button class="dock-btn" data-pane="pane-sensor" title="7. Formato de Sensor, Exposición, ND y Obturación">
+      <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><rect x="6" y="9" width="12" height="6"/></svg>
+      <span>Sensor</span>
+    </button>
+
+    <div class="dock-divider"></div>
+
+    <button class="dock-btn" data-pane="pane-shotlist" title="8. Planilla de Cámara (Shot List) y Exportación">
+      <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>Planilla</span>
+    </button>
+  </nav>
+
+  <!-- COLLAPSIBLE CONTEXTUAL INSPECTOR DRAWER -->
+  <aside class="tool-drawer" id="tool-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title" id="drawer-title">1. Escala de Plano y Encuadre</div>
+      <button class="drawer-close" id="btn-close-drawer" title="Ocultar panel para ampliar el visor (haz clic en cualquier icono izquierdo para reabrir)">✕</button>
+    </div>
+
+    <div class="drawer-content">
+
+      <!-- PANE 1: FRAMING & SHOT SIZE -->
+      <div class="tool-pane active" id="pane-framing">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Presets de Plano Cinematográfico</span>
+            <span class="tag" id="tag-shot-name">Plano Medio Corto</span>
+          </div>
+          <div class="grid-5" id="shot-preset-btns">
+            <button class="pill-btn" data-shot="EWS" title="Extreme Wide Shot — Plano General Extremo">EWS</button>
+            <button class="pill-btn" data-shot="WS" title="Wide Shot — Plano General">WS</button>
+            <button class="pill-btn" data-shot="FS" title="Full Shot — Plano Entero">FS</button>
+            <button class="pill-btn" data-shot="MWS" title="Medium Wide / Plano Americano">MWS</button>
+            <button class="pill-btn" data-shot="MS" title="Medium Shot — Plano Medio">MS</button>
+            <button class="pill-btn active" data-shot="MCU" title="Medium Close-Up — Plano Medio Corto">MCU</button>
+            <button class="pill-btn" data-shot="CU" title="Close-Up — Primer Plano">CU</button>
+            <button class="pill-btn" data-shot="BCU" title="Big Close-Up — Primerísimo Primer Plano">BCU</button>
+            <button class="pill-btn" data-shot="ECU" title="Extreme Close-Up — Plano Detalle Ojos">ECU</button>
+            <button class="pill-btn" data-shot="TWO" title="Two-Shot — Plano de Dos Personajes">2-SHOT</button>
+          </div>
+          <p id="shot-desc-text" style="font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4;">
+            Encuadra desde el pecho hasta la cabeza del actor activo. Ideal para diálogo manteniendo lectura espacial del entorno.
+          </p>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Distancia Física de Cámara</span>
+            <span class="tag" id="tag-cam-dist">1.85 m</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Distancia al Sujeto Principal (D<sub>cam</sub>)</span>
+              <span class="ctrl-val" id="val-cam-dist">1.85 m</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="sl-cam-dist" min="0.40" max="22.0" step="0.02" value="1.85" />
+              <input type="number" id="num-cam-dist" class="num-box" min="0.40" max="25.0" step="0.05" value="1.85" />
+            </div>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Modo al Cambiar Lente (mm)</span>
+            </div>
+            <div class="grid-2" id="framing-lock-btns">
+              <button class="pill-btn cyan active" data-lock="keep_framing" title="Ajusta automáticamente la distancia de la cámara al cambiar los mm para mantener el tamaño del actor y ver la compresión del fondo">Mantener Encuadre</button>
+              <button class="pill-btn cyan" data-lock="keep_distance" title="Deja el trípode fijo en su sitio al cambiar los mm del lente">Trípode Fijo</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Relación de Aspecto y Guías</span>
+            <span class="tag" id="tag-aspect">2.39:1</span>
+          </div>
+          <div class="grid-5" id="aspect-btns" style="margin-bottom:8px;">
+            <button class="pill-btn active" data-aspect="2.39">2.39:1</button>
+            <button class="pill-btn" data-aspect="1.85">1.85:1</button>
+            <button class="pill-btn" data-aspect="1.777">16:9</button>
+            <button class="pill-btn" data-aspect="1.333">4:3</button>
+            <button class="pill-btn" data-aspect="0.5625">9:16</button>
+          </div>
+          <div class="grid-2">
+            <button class="pill-btn active" id="btn-guide-thirds">Regla de Tercios</button>
+            <button class="pill-btn" id="btn-guide-golden">Espiral / Áurea</button>
+            <button class="pill-btn active" id="btn-guide-safe">Safe Area 90%</button>
+            <button class="pill-btn active" id="btn-guide-hud">HUD de Cámara</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 2: OPTICS & LENSES -->
+      <div class="tool-pane" id="pane-optics">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Distancia Focal (Focal Length)</span>
+            <span class="tag" id="tag-hfov">39.6° HFOV</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Focal del Lente</span>
+              <span class="ctrl-val" id="val-focal">50 mm</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="sl-focal" min="12" max="250" step="1" value="50" />
+              <input type="number" id="num-focal" class="num-box" min="10" max="300" step="1" value="50" />
+            </div>
+          </div>
+          <div class="grid-5" id="focal-preset-btns">
+            <button class="pill-btn" data-focal="14">14</button>
+            <button class="pill-btn" data-focal="18">18</button>
+            <button class="pill-btn" data-focal="24">24</button>
+            <button class="pill-btn" data-focal="35">35</button>
+            <button class="pill-btn active" data-focal="50">50</button>
+            <button class="pill-btn" data-focal="65">65</button>
+            <button class="pill-btn" data-focal="85">85</button>
+            <button class="pill-btn" data-focal="100">100</button>
+            <button class="pill-btn" data-focal="135">135</button>
+            <button class="pill-btn" data-focal="200">200</button>
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Apertura de Diafragma (T-Stop)</span>
+            <span class="tag" id="tag-blades">9 Palas</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Apertura Óptica</span>
+              <span class="ctrl-val" id="val-aperture">T/1.8</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="sl-aperture" min="0.95" max="22" step="0.05" value="1.8" />
+              <input type="number" id="num-aperture" class="num-box" min="0.95" max="22" step="0.1" value="1.8" />
+            </div>
+          </div>
+          <div class="grid-4" id="aperture-preset-btns" style="margin-bottom:8px;">
+            <button class="pill-btn" data-ap="1.2">T1.2</button>
+            <button class="pill-btn" data-ap="1.4">T1.4</button>
+            <button class="pill-btn active" data-ap="1.8">T1.8</button>
+            <button class="pill-btn" data-ap="2.8">T2.8</button>
+            <button class="pill-btn" data-ap="4.0">T4.0</button>
+            <button class="pill-btn" data-ap="5.6">T5.6</button>
+            <button class="pill-btn" data-ap="8.0">T8.0</button>
+            <button class="pill-btn" data-ap="16.0">T16</button>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Palas del Iris (Forma del Bokeh)</span>
+              <span class="ctrl-val" id="val-blades">9 palas (Circular)</span>
+            </div>
+            <input type="range" id="sl-blades" min="5" max="14" step="1" value="9" />
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Carácter Óptico &amp; Anamórfico</span>
+            <span class="tag" id="tag-squeeze">1.0x Esférico</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><span>Compresión Anamórfica (Squeeze)</span></div>
+            <div class="grid-4" id="squeeze-btns">
+              <button class="pill-btn active" data-sq="1.0">1.0x Esf.</button>
+              <button class="pill-btn" data-sq="1.33">1.33x</button>
+              <button class="pill-btn" data-sq="1.8">1.8x</button>
+              <button class="pill-btn" data-sq="2.0">2.0x Ana.</button>
+            </div>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top"><span>Personalidad del Cristal (Lens Look)</span></div>
+            <select id="lens-character-select">
+              <option value="modern" selected>ARRI Master Prime (Clínico, Alto Contraste)</option>
+              <option value="cooke">Cooke S4/i Look (Cálido, Transición Suave)</option>
+              <option value="anamorphic_vintage">Panavision Serie C (Flares Azules, Bokeh Oval)</option>
+              <option value="helios">Vintage Helios 44-2 (Swirly Bokeh / Viñeteo)</option>
+            </select>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Viñeteo Óptico &amp; Intensidad de Flares</span>
+              <span class="ctrl-val" id="val-vignette">20%</span>
+            </div>
+            <input type="range" id="sl-vignette" min="0" max="100" step="5" value="20" />
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 3: FOCUS (1st AC) & OPTICAL METRICS -->
+      <div class="tool-pane" id="pane-focus">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Control de Foco (1st AC Follow Focus)</span>
+            <span class="tag" id="tag-focus-mode">AF Actor A</span>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top"><span>Enfoque Rápido a Personaje o Manual</span></div>
+            <div class="grid-2" id="focus-target-btns">
+              <button class="pill-btn green active" data-ftarget="actor_0">🎯 AF Actor 1</button>
+              <button class="pill-btn green" data-ftarget="actor_1">🎯 AF Actor 2</button>
+              <button class="pill-btn green" data-ftarget="manual">✋ Manual (S₁)</button>
+              <button class="pill-btn green" data-ftarget="rack_ab">🔄 Rack Focus 1↔2</button>
+            </div>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Distancia Exacta de Enfoque (S<sub>1</sub>)</span>
+              <span class="ctrl-val" id="val-focus-dist">1.85 m</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="sl-focus-dist" min="0.35" max="25.0" step="0.02" value="1.85" />
+              <input type="number" id="num-focus-dist" class="num-box" min="0.35" max="30.0" step="0.05" value="1.85" />
+            </div>
+          </div>
+
+          <div class="grid-2" style="margin-top:6px;">
+            <button class="pill-btn" id="btn-peaking">Focus Peaking (Verde)</button>
+            <button class="pill-btn" id="btn-split-diopter">Lente Split Diopter</button>
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Telemetría de Profundidad de Campo</span>
+            <span class="tag">Cálculo Exacto</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-family:var(--font-mono); font-size:11px;">
+            <div style="background:var(--bg-input); padding:7px; border-radius:5px; border:1px solid var(--border);">
+              <div style="color:var(--text-muted); font-size:10px;">DoF Total</div>
+              <div id="read-dof-total" style="font-size:13px; font-weight:700; color:#fff;">14.2 cm</div>
+              <div id="read-dof-split" style="font-size:9.5px; color:var(--cyan);">Del: 48% | Det: 52%</div>
+            </div>
+            <div style="background:var(--bg-input); padding:7px; border-radius:5px; border:1px solid var(--border);">
+              <div style="color:var(--text-muted); font-size:10px;">Hiperfocal (H)</div>
+              <div id="read-hyperfocal" style="font-size:13px; font-weight:700; color:#fff;">47.9 m</div>
+              <div id="read-hyper-half" style="font-size:9.5px; color:var(--cyan);">Desde 23.9 m → ∞</div>
+            </div>
+            <div style="background:var(--bg-input); padding:7px; border-radius:5px; border:1px solid var(--border);">
+              <div style="color:var(--text-muted); font-size:10px;">Límite Cercano (D<sub>near</sub>)</div>
+              <div id="read-dnear" style="font-size:13px; font-weight:700; color:var(--green);">1.78 m</div>
+            </div>
+            <div style="background:var(--bg-input); padding:7px; border-radius:5px; border:1px solid var(--border);">
+              <div style="color:var(--text-muted); font-size:10px;">Límite Lejano (D<sub>far</sub>)</div>
+              <div id="read-dfar" style="font-size:13px; font-weight:700; color:var(--green);">1.92 m</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 4: MULTI-CHARACTER MANAGER (ACTORS IN SCENE) -->
+      <div class="tool-pane" id="pane-actors">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Personajes en Escena (Blocking 3D)</span>
+            <button class="btn-action" id="btn-add-actor" style="padding:3px 8px; font-size:10.5px;">+ Añadir Actor</button>
+          </div>
+          <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+            Selecciona un personaje para moverlo en el espacio 3D, cambiar su pose o clavar el foco en él. También puedes hacer clic sobre cualquier personaje en el visor.
+          </p>
+          <div class="char-list" id="char-list-box"></div>
+        </div>
+
+        <div class="group-card" id="selected-actor-inspector">
+          <div class="group-header">
+            <span id="actor-insp-title">Ajustes: Actor 1 (Protagonista)</span>
+            <button class="mini-btn" id="btn-delete-actor" style="color:var(--red);">Eliminar</button>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Nombre / Rol en Escena</span>
+            </div>
+            <input type="text" id="inp-actor-name" value="Protagonista (A)" style="width:100%;" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Posición Lateral X (Izquierda / Derecha)</span>
+              <span class="ctrl-val" id="val-actor-x">0.00 m</span>
+            </div>
+            <input type="range" id="sl-actor-x" min="-3.50" max="3.50" step="0.05" value="0.00" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Profundidad Z (Respecto al Sujeto Base)</span>
+              <span class="ctrl-val" id="val-actor-z">0.00 m</span>
+            </div>
+            <input type="range" id="sl-actor-z" min="-2.50" max="12.00" step="0.05" value="0.00" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Orientación / Mirada (Giro Yaw)</span>
+              <span class="ctrl-val" id="val-actor-yaw">0° (Frente a cámara)</span>
+            </div>
+            <input type="range" id="sl-actor-yaw" min="-180" max="180" step="5" value="0" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Altura Física &amp; Pose</span>
+              <span class="ctrl-val" id="val-actor-h">1.76 m</span>
+            </div>
+            <div class="grid-2">
+              <input type="range" id="sl-actor-h" min="1.45" max="2.02" step="0.01" value="1.76" />
+              <select id="sel-actor-pose">
+                <option value="stand">De Pie (Natural)</option>
+                <option value="action">Gesticulando / Diálogo</option>
+                <option value="sit">Sentado / Taburete</option>
+                <option value="walk">Caminando</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top"><span>Color de Vestuario</span></div>
+            <div class="grid-5" id="actor-color-btns">
+              <button class="pill-btn" data-col="#3b82f6" style="border-left:4px solid #3b82f6;">Azul</button>
+              <button class="pill-btn" data-col="#e11d48" style="border-left:4px solid #e11d48;">Rojo</button>
+              <button class="pill-btn" data-col="#10b981" style="border-left:4px solid #10b981;">Verde</button>
+              <button class="pill-btn" data-col="#f59e0b" style="border-left:4px solid #f59e0b;">Ámbar</button>
+              <button class="pill-btn" data-col="#64748b" style="border-left:4px solid #64748b;">Gris</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 5: LOCATIONS 3D & LIGHTING -->
+      <div class="tool-pane" id="pane-locations">
+        <div class="group-card">
+          <div class="group-header">
+            <span>8 Locaciones 3D con Profundidad Real</span>
+          </div>
+          <div class="loc-grid" id="loc-cards-grid">
+            <div class="loc-card active" data-loc="studio">
+              <div class="loc-card-title">1. Estudio Ciclorama</div>
+              <div class="loc-card-sub">Grid métrico, softboxes y marcas de distancia</div>
+            </div>
+            <div class="loc-card" data-loc="cyberpunk">
+              <div class="loc-card-title">2. Calle Nocturna</div>
+              <div class="loc-card-sub">Neones, farolas, asfalto húmedo y mucho bokeh</div>
+            </div>
+            <div class="loc-card" data-loc="cafe">
+              <div class="loc-card-title">3. Cafetería Interior</div>
+              <div class="loc-card-sub">Mesas, lámparas colgantes cálidas y ventanal</div>
+            </div>
+            <div class="loc-card" data-loc="warehouse">
+              <div class="loc-card-title">4. Nave Industrial</div>
+              <div class="loc-card-sub">Columnas de hormigón, vigas y contraluz</div>
+            </div>
+            <div class="loc-card" data-loc="forest">
+              <div class="loc-card-title">5. Bosque con Niebla</div>
+              <div class="loc-card-sub">Árboles multicapa, rayos solares y profundidad</div>
+            </div>
+            <div class="loc-card" data-loc="desert">
+              <div class="loc-card-title">6. Desierto Golden Hour</div>
+              <div class="loc-card-sub">Dunas, montañas lejanas y sol cálido rasante</div>
+            </div>
+            <div class="loc-card" data-loc="corridor">
+              <div class="loc-card-title">7. Pasillo Sci-Fi / Lab</div>
+              <div class="loc-card-sub">Arcos modulares LED con fuerte punto de fuga</div>
+            </div>
+            <div class="loc-card" data-loc="rooftop">
+              <div class="loc-card-title">8. Azotea Atardecer</div>
+              <div class="loc-card-sub">Skyline de edificios a distancia y luces cálidas</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Distancia del Fondo &amp; Atmósfera</span>
+            <span class="tag" id="tag-bg-dist">6.0 m</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Separación Sujeto → Fondo Principal (D<sub>bg</sub>)</span>
+              <span class="ctrl-val" id="val-bg-dist">6.0 m</span>
+            </div>
+            <input type="range" id="sl-bg-dist" min="1.0" max="25.0" step="0.2" value="6.0" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Niebla Volumétrica / Haze de Set</span>
+              <span class="ctrl-val" id="val-haze">15%</span>
+            </div>
+            <input type="range" id="sl-haze" min="0" max="80" step="5" value="15" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Temperatura de Color (Balance Kelvin)</span>
+              <span class="ctrl-val" id="val-kelvin">5600K</span>
+            </div>
+            <input type="range" id="sl-kelvin" min="2800" max="8500" step="100" value="5600" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Ángulo de Luz Principal (Key Light)</span>
+              <span class="ctrl-val" id="val-key-angle">40°</span>
+            </div>
+            <input type="range" id="sl-key-angle" min="-135" max="135" step="5" value="40" />
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 6: CAMERA RIG, ANGLES & MOVEMENT -->
+      <div class="tool-pane" id="pane-rig">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Ángulo Vertical y Altura de Cámara</span>
+            <span class="tag" id="tag-angle-preset">Nivel Ojos</span>
+          </div>
+          <div class="grid-5" id="angle-preset-btns" style="margin-bottom:10px;">
+            <button class="pill-btn" data-ang="bird">Cenital</button>
+            <button class="pill-btn" data-ang="high">Picado</button>
+            <button class="pill-btn active" data-ang="eye">Ojos</button>
+            <button class="pill-btn" data-ang="low">Contrapic.</button>
+            <button class="pill-btn" data-ang="worm">Ras Suelo</button>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Altura del Lente sobre el Suelo (Y<sub>cam</sub>)</span>
+              <span class="ctrl-val" id="val-cam-y">1.62 m</span>
+            </div>
+            <input type="range" id="sl-cam-y" min="0.15" max="4.20" step="0.02" value="1.62" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Inclinación Vertical (Tilt / Pitch)</span>
+              <span class="ctrl-val" id="val-cam-pitch">0.0°</span>
+            </div>
+            <input type="range" id="sl-cam-pitch" min="-45" max="45" step="0.5" value="0" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Órbita Horizontal 360° (Azimuth)</span>
+              <span class="ctrl-val" id="val-cam-yaw">0°</span>
+            </div>
+            <input type="range" id="sl-cam-yaw" min="-180" max="180" step="1" value="0" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Ángulo Holandés (Roll) &amp; Paneo X</span>
+              <span class="ctrl-val" id="val-cam-roll">0° | 0.0m</span>
+            </div>
+            <div class="grid-2">
+              <input type="range" id="sl-cam-roll" min="-35" max="35" step="1" value="0" />
+              <input type="range" id="sl-cam-panx" min="-1.2" max="1.2" step="0.02" value="0" />
+            </div>
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Movimiento de Rig en Vivo</span>
+          </div>
+          <select id="sel-rig-motion">
+            <option value="static" selected>Trípode Fijo (Cabeza Fluida Bloqueada)</option>
+            <option value="dolly_zoom">Dolly Zoom Automático (Efecto Vértigo en Vivo)</option>
+            <option value="push_in">Dolly In / Out Suave</option>
+            <option value="handheld">Handheld (Cámara al Hombro Orgánica)</option>
+            <option value="orbit">Travelling Circular (Parallax 3D)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PANE 7: SENSOR, EXPOSURE & SHUTTER -->
+      <div class="tool-pane" id="pane-sensor">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Cuerpo de Cámara y Tamaño de Sensor</span>
+            <span class="tag" id="tag-crop">Crop 1.00x</span>
+          </div>
+          <div class="ctrl">
+            <select id="sel-sensor">
+              <option value="ff" selected>Full Frame 35mm / VistaVision (36.0 × 24.0 mm)</option>
+              <option value="alexa_lf">ARRI ALEXA LF Open Gate (36.70 × 25.54 mm)</option>
+              <option value="v_raptor">RED V-RAPTOR 8K VV (40.96 × 21.60 mm)</option>
+              <option value="alexa_65">ARRI ALEXA 65 / IMAX Digital (54.12 × 25.58 mm)</option>
+              <option value="s35">Super 35mm ARRI 4:3 (24.89 × 18.66 mm)</option>
+              <option value="mft">Micro Cuatro Tercios MFT (17.30 × 13.00 mm)</option>
+              <option value="s16">Super 16mm Film Gate (12.52 × 7.41 mm)</option>
+            </select>
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Círculo de Confusión Límite (CoC)</span>
+              <span class="ctrl-val" id="val-coc">0.029 mm</span>
+            </div>
+            <input type="range" id="sl-coc" min="0.008" max="0.050" step="0.001" value="0.029" />
+          </div>
+        </div>
+
+        <div class="group-card">
+          <div class="group-header">
+            <span>Parámetros de Cine Digital</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Ángulo de Obturación (Shutter Angle)</span>
+              <span class="ctrl-val" id="val-shutter">180° (1/48s @ 24fps)</span>
+            </div>
+            <input type="range" id="sl-shutter" min="45" max="360" step="15" value="180" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Filtro Densidad Neutra (ND Interno)</span>
+              <span class="ctrl-val" id="val-nd">Clear (0 pasos)</span>
+            </div>
+            <input type="range" id="sl-nd" min="0" max="7" step="1" value="0" />
+          </div>
+
+          <div class="ctrl">
+            <div class="ctrl-top">
+              <span>Grano Cinematográfico (Film Stock Texture)</span>
+              <span class="ctrl-val" id="val-grain">10%</span>
+            </div>
+            <input type="range" id="sl-grain" min="0" max="60" step="5" value="10" />
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 8: SHOT LIST -->
+      <div class="tool-pane" id="pane-shotlist">
+        <div class="group-card">
+          <div class="group-header">
+            <span>Planilla de Cámara Guardada</span>
+            <button class="btn-ghost" id="btn-export-csv" style="padding:3px 7px; font-size:10px;">⬇ CSV</button>
+          </div>
+          <div id="shotlist-box"></div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT STAGE (100% CLEAN BY DEFAULT, NO INTRUSIVE CAMERA BLOCKING THE LENS) -->
+  <main class="stage-wrap">
+    <div class="stage-subbar">
+      <div class="view-Mode-group" id="main-view-tabs">
+        <button class="mode-tab active" data-view="camera">🎬 Visor de Lente (Cámara Limpia)</button>
+        <button class="mode-tab" data-view="topdown">📐 Mapa de Planta CAD (Blocking 2D)</button>
+        <button class="mode-tab" data-view="stage3d">🧊 Maqueta 3D Orbital del Set</button>
+        <button class="mode-tab" data-view="side">📏 Corte de Elevación Lateral</button>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);">
+        <span>💡 Tip: Haz clic en un actor en pantalla para seleccionarlo y enfocarlo · Rueda del mouse = Focal (mm)</span>
+      </div>
+    </div>
+
+    <div class="canvas-area">
+      <canvas id="main-canvas"></canvas>
+
+      <!-- COLLAPSIBLE PICTURE-IN-PICTURE RADAR (TOP-RIGHT) -->
+      <div class="pip-radar" id="pip-radar">
+        <div class="pip-header" id="pip-header">
+          <span>📐 RADAR DE PLANTA (HAZ CLIC PARA MOVER)</span>
+          <span id="pip-toggle-icon">▾</span>
+        </div>
+        <div class="pip-body">
+          <canvas id="pip-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- FLOATING MINIMALIST TELEMETRY BAR -->
+      <div class="floating-telemetry">
+        <div class="ft-metric"><span>FOV:</span> <strong id="ft-fov">39.6° × 27.0°</strong></div>
+        <div class="ft-metric"><span>Foco S₁:</span> <strong class="hi" id="ft-s1">1.85 m</strong></div>
+        <div class="ft-metric"><span>Límites DoF:</span> <strong class="ok" id="ft-limits">1.78m – 1.92m</strong></div>
+        <div class="ft-metric"><span>Bokeh Fondo:</span> <strong id="ft-bokeh">0.62 mm (Cremoso)</strong></div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+/**
+ * CINEOPTICS 3D STUDIO v2
+ * - Interfaz limpia modular estilo Photoshop / DaVinci Resolve
+ * - Visor principal 100% libre de cámaras intrusivas
+ * - Soporte Multi-Personaje en escena (añadir, posicionar en X/Z, rotar, posar, cambiar vestuario y enfocar con 1 clic)
+ * - 8 Locaciones 3D comprensibles y detalladas con perspectiva real, suelo con referencias métricas y bokeh físico
+ */
+
+const SENSORS = {
+  ff:       { name: "Full Frame 35mm",    w: 36.00, h: 24.00, coc: 0.029 },
+  alexa_lf: { name: "ARRI ALEXA LF",      w: 36.70, h: 25.54, coc: 0.029 },
+  v_raptor: { name: "RED V-RAPTOR VV",    w: 40.96, h: 21.60, coc: 0.030 },
+  alexa_65: { name: "ARRI ALEXA 65",      w: 54.12, h: 25.58, coc: 0.040 },
+  s35:      { name: "Super 35mm",         w: 24.89, h: 18.66, coc: 0.020 },
+  mft:      { name: "Micro 4/3 (MFT)",    w: 17.30, h: 13.00, coc: 0.015 },
+  s16:      { name: "Super 16mm",         w: 12.52, h: 7.41,  coc: 0.011 }
+};
+
+const SHOT_PRESETS = {
+  EWS: { name: "Plano General Extremo", visibleHeight: 4.60, yOff: -0.60, desc: "Muestra la arquitectura completa de la locación y todos los personajes dentro del espacio." },
+  WS:  { name: "Plano General (WS)",    visibleHeight: 2.60, yOff: -0.68, desc: "Cuerpo entero con aire amplio; ideal para apreciar el blocking entre varios personajes." },
+  FS:  { name: "Plano Entero (FS)",     visibleHeight: 1.92, yOff: -0.70, desc: "De pies a cabeza del personaje activo." },
+  MWS: { name: "Plano Americano",       visibleHeight: 1.25, yOff: -0.40, desc: "Corta a la altura de las rodillas (3/4). Muy usado en diálogo dinámico y acción." },
+  MS:  { name: "Plano Medio (MS)",      visibleHeight: 0.90, yOff: -0.25, desc: "De la cintura hacia arriba. Equilibrio clásico entre expresión y lenguaje corporal." },
+  MCU: { name: "Plano Medio Corto",     visibleHeight: 0.62, yOff: -0.14, desc: "Desde el pecho hasta la cabeza. El rostro lidera conservando contexto y bokeh del fondo." },
+  CU:  { name: "Primer Plano (CU)",     visibleHeight: 0.42, yOff: -0.05, desc: "Rostro completo. Fuerte aislamiento óptico respecto a los demás actores y el fondo." },
+  BCU: { name: "Primerísimo P.P.",      visibleHeight: 0.28, yOff: -0.02, desc: "Frente a barbilla. Máximo dramatismo y profundidad de campo milimétrica." },
+  ECU: { name: "Plano Detalle Ojos",    visibleHeight: 0.18, yOff:  0.00, desc: "Encuadra únicamente la mirada del personaje." },
+  TWO: { name: "Two-Shot (2 Actores)",  visibleHeight: 1.15, yOff: -0.32, desc: "Abre el encuadre y centra la cámara para mostrar a dos personajes interactuando en escena." }
+};
+
+const state = {
+  activeView: "camera", // "camera" | "topdown" | "stage3d" | "side"
+  shotType: "MCU",
+  sensorKey: "ff",
+  sensorW: 36.0,
+  sensorH: 24.0,
+  cocLimit: 0.029,
+  aspectRatio: 2.39,
+
+  focalLength: 50,
+  aperture: 1.8,
+  blades: 9,
+  squeeze: 1.0,
+  lensCharacter: "modern",
+  vignette: 20,
+  framingLock: "keep_framing",
+
+  camDist: 1.85,
+  focusTarget: "actor_0", // "actor_0", "actor_1", ..., "manual", "rack_ab"
+  focusDist: 1.85,
+  peaking: false,
+  splitDiopter: false,
+
+  camHeight: 1.62,
+  camPitch: 0.0,
+  camYaw: 0.0,
+  camRoll: 0.0,
+  camPanX: 0.0,
+  rigMotion: "static",
+
+  location: "studio",
+  bgDist: 6.0,
+  haze: 15,
+  kelvin: 5600,
+  keyAngle: 40,
+
+  shutterAngle: 180,
+  ndSteps: 0,
+  grain: 10,
+
+  guideThirds: true,
+  guideGolden: false,
+  guideSafe: true,
+  guideHud: true,
+
+  // Multi-Character Array!
+  selectedActorIdx: 0,
+  actors: [
+    {
+      name: "Protagonista (A)",
+      x: 0.00,   // lateral meters
+      z: 0.00,   // depth offset from subject origin (0 = at camDist)
+      yaw: 0,    // facing angle deg
+      height: 1.76,
+      pose: "stand",
+      color: "#3b82f6",
+      skin: "#d69e7e"
+    },
+    {
+      name: "Secundario (B)",
+      x: 0.72,
+      z: 1.65,   // 1.65m behind Actor A!
+      yaw: -15,
+      height: 1.72,
+      pose: "action",
+      color: "#e11d48",
+      skin: "#c58c6d"
+    }
+  ],
+
+  stageOrbitYaw: -35,
+  stageOrbitPitch: 25,
+  time: 0,
+  shotList: []
+};
+
+// Deterministic bokeh & background lights
+const SCENE_LIGHTS = [];
+for (let i = 0; i < 38; i++) {
+  const s1 = ((i * 9301 + 49297) % 233280) / 233280;
+  const s2 = ((i * 4211 + 17389) % 233280) / 233280;
+  const s3 = ((i * 7919 + 8191) % 233280) / 233280;
+  SCENE_LIGHTS.push({
+    x: (s1 - 0.5) * 14,
+    y: 0.35 + s2 * 4.2,
+    zMult: 0.5 + s3 * 0.85,
+    size: 0.06 + (i % 4) * 0.025,
+    type: i % 3
+  });
+}
+
+function getActorActualDistance(actor) {
+  // Distance along camera optical axis from camera to actor
+  const yawRad = (state.camYaw * Math.PI) / 180;
+  const camX = Math.sin(yawRad) * state.camDist + state.camPanX;
+  const camZ = -Math.cos(yawRad) * state.camDist;
+  const dx = actor.x - camX;
+  const dz = actor.z - camZ;
+  return Math.max(0.3, Math.sqrt(dx * dx + dz * dz));
+}
+
+function computeOptics() {
+  const f = state.focalLength;
+  const N = state.aperture;
+  const c = state.cocLimit;
+
+  // Update auto-focus distance if locked to an actor
+  if (state.focusTarget.startsWith("actor_")) {
+    const idx = parseInt(state.focusTarget.split("_")[1], 10);
+    if (state.actors[idx]) {
+      state.focusDist = getActorActualDistance(state.actors[idx]);
+    }
+  }
+
+  const S1 = Math.max(0.3, state.focusDist) * 1000;
+  const effW = state.sensorW * state.squeeze;
+  const effH = state.sensorH;
+  const diag = Math.sqrt(effW * effW + effH * effH);
+
+  const hfovRad = 2 * Math.atan(effW / (2 * f));
+  const vfovRad = 2 * Math.atan(effH / (2 * f));
+  const dfovRad = 2 * Math.atan(diag / (2 * f));
+
+  const hfovDeg = hfovRad * (180 / Math.PI);
+  const vfovDeg = vfovRad * (180 / Math.PI);
+
+  const H_mm = (f * f) / (N * c) + f;
+  const H_m = H_mm / 1000;
+
+  const D_near_m = ((H_mm * S1) / (H_mm + (S1 - f))) / 1000;
+  let D_far_m = Infinity;
+  if (S1 < H_mm) {
+    D_far_m = ((H_mm * S1) / (H_mm - (S1 - f))) / 1000;
+  }
+
+  const totalDoF_m = D_far_m === Infinity ? Infinity : (D_far_m - D_near_m);
+  let frontPct = 50, rearPct = 50;
+  if (totalDoF_m !== Infinity && totalDoF_m > 0.0001) {
+    frontPct = Math.round(((state.focusDist - D_near_m) / totalDoF_m) * 100);
+    rearPct = 100 - frontPct;
+  }
+
+  function getCoCAtDistance(D_m, screenXNorm = 0) {
+    const D_mm = Math.max(200, D_m * 1000);
+    let activeS1_mm = S1;
+    // If Split Diopter is enabled and object is on right half, focus on Actor 2 (or background)
+    if (state.splitDiopter && screenXNorm > 0.05 && state.actors.length > 1) {
+      activeS1_mm = getActorActualDistance(state.actors[1]) * 1000;
+    }
+    return ((f * f) / (N * Math.max(10, activeS1_mm - f))) * (Math.abs(D_mm - activeS1_mm) / D_mm);
+  }
+
+  const bgCoC = getCoCAtDistance(state.camDist + state.bgDist);
+  const cropFactor = Math.sqrt(36*36 + 24*24) / Math.sqrt(state.sensorW*state.sensorW + state.sensorH*state.sensorH);
+  const fieldW_m = 2 * state.camDist * Math.tan(hfovRad / 2);
+  const fieldH_m = 2 * state.camDist * Math.tan(vfovRad / 2);
+
+  return {
+    hfovRad, vfovRad, dfovRad, hfovDeg, vfovDeg,
+    H_m, D_near_m, D_far_m, totalDoF_m, frontPct, rearPct,
+    bgCoC, cropFactor, fieldW_m, fieldH_m, getCoCAtDistance
+  };
+}
+
+function kelvinToRGB(k) {
+  const temp = k / 100;
+  let r, g, b;
+  if (temp <= 66) {
+    r = 255;
+    g = 99.47 * Math.log(temp) - 161.11;
+    b = temp <= 19 ? 0 : (138.51 * Math.log(temp - 10) - 305.04);
+  } else {
+    r = 329.69 * Math.pow(temp - 60, -0.133);
+    g = 288.12 * Math.pow(temp - 60, -0.075);
+    b = 255;
+  }
+  return {
+    r: Math.min(255, Math.max(0, Math.round(r))),
+    g: Math.min(255, Math.max(0, Math.round(g))),
+    b: Math.min(255, Math.max(0, Math.round(b)))
+  };
+}
+
+function applyShotPreset(shotKey) {
+  const p = SHOT_PRESETS[shotKey];
+  if (!p) return;
+  state.shotType = shotKey;
+
+  const vfovRad = 2 * Math.atan(state.sensorH / (2 * state.focalLength));
+  state.camDist = Math.max(0.4, Math.min(22.0, (p.visibleHeight / 2) / Math.tan(vfovRad / 2)));
+
+  const mainActor = state.actors[0] || { height: 1.76, x: 0 };
+  const eyeY = mainActor.height * 0.92;
+  if (Math.abs(state.camPitch) < 6) {
+    state.camHeight = Math.max(0.2, eyeY + p.yOff);
+  }
+
+  if (shotKey === "TWO" && state.actors.length > 1) {
+    state.camPanX = (state.actors[0].x + state.actors[1].x) * 0.5;
+  }
+
+  syncUI();
+}
+
+// Render multi-character list in Drawer
+function renderActorListUI() {
+  const box = document.getElementById("char-list-box");
+  box.innerHTML = "";
+
+  state.actors.forEach((act, idx) => {
+    const dist = getActorActualDistance(act);
+    const isFocused = state.focusTarget === `actor_${idx}`;
+    const row = document.createElement("div");
+    row.className = "char-item" + (idx === state.selectedActorIdx ? " selected" : "");
+    row.innerHTML = `
+      <div class="char-left">
+        <span class="char-swatch" style="background:${act.color};"></span>
+        <div>
+          <div class="char-name">${act.name}</div>
+          <div class="char-dist-tag">Dist: ${dist.toFixed(2)}m | X: ${act.x >= 0 ? '+' : ''}${act.x.toFixed(2)}m</div>
+        </div>
+      </div>
+      <div class="char-actions">
+        <button class="mini-btn ${isFocused ? 'focused' : ''}" data-focus-idx="${idx}" title="Clavar Follow Focus en este personaje">🎯 Foco</button>
+      </div>
+    `;
+    row.addEventListener("click", e => {
+      if (e.target.dataset.focusIdx !== undefined) {
+        state.focusTarget = `actor_${idx}`;
+        syncUI();
+        return;
+      }
+      state.selectedActorIdx = idx;
+      syncUI();
+    });
+    box.appendChild(row);
+  });
+
+  // Populate selected actor inspector controls
+  const sel = state.actors[state.selectedActorIdx];
+  if (sel) {
+    document.getElementById("actor-insp-title").textContent = `Ajustes: ${sel.name}`;
+    document.getElementById("inp-actor-name").value = sel.name;
+    document.getElementById("val-actor-x").textContent = `${sel.x >= 0 ? '+' : ''}${sel.x.toFixed(2)} m`;
+    document.getElementById("sl-actor-x").value = sel.x;
+    document.getElementById("val-actor-z").textContent = `${sel.z >= 0 ? '+' : ''}${sel.z.toFixed(2)} m`;
+    document.getElementById("sl-actor-z").value = sel.z;
+    document.getElementById("val-actor-yaw").textContent = `${sel.yaw}°`;
+    document.getElementById("sl-actor-yaw").value = sel.yaw;
+    document.getElementById("val-actor-h").textContent = `${sel.height.toFixed(2)} m`;
+    document.getElementById("sl-actor-h").value = sel.height;
+    document.getElementById("sel-actor-pose").value = sel.pose;
+  }
+}
+
+function syncUI() {
+  const opt = computeOptics();
+
+  // Top Quick Bar
+  document.getElementById("qb-shot").textContent = state.shotType;
+  document.getElementById("qb-sensor").textContent = SENSORS[state.sensorKey].name;
+  document.getElementById("qb-lens").textContent = `${state.focalLength}mm T${state.aperture.toFixed(1)}`;
+  document.getElementById("qb-focus").textContent = `${state.focusDist.toFixed(2)} m`;
+  const dofStr = opt.totalDoF_m === Infinity ? "∞ Hiperfocal" : (opt.totalDoF_m < 1 ? `${(opt.totalDoF_m * 100).toFixed(1)} cm` : `${opt.totalDoF_m.toFixed(2)} m`);
+  document.getElementById("qb-dof").textContent = dofStr;
+  document.getElementById("qb-chars").textContent = `${state.actors.length} en escena`;
+
+  // Floating bottom pill
+  document.getElementById("ft-fov").textContent = `${opt.hfovDeg.toFixed(1)}° × ${opt.vfovDeg.toFixed(1)}°`;
+  document.getElementById("ft-s1").textContent = `${state.focusDist.toFixed(2)} m`;
+  document.getElementById("ft-limits").textContent = `${opt.D_near_m.toFixed(2)}m – ${opt.D_far_m === Infinity ? '∞' : opt.D_far_m.toFixed(2) + 'm'}`;
+  const blurRatio = opt.bgCoC / state.cocLimit;
+  const blurWord = blurRatio > 18 ? "Extremo" : (blurRatio > 7 ? "Cremoso" : (blurRatio > 2 ? "Medio" : "Nítido"));
+  document.getElementById("ft-bokeh").textContent = `${opt.bgCoC.toFixed(2)} mm (${blurWord})`;
+
+  // Pane 1: Framing
+  document.querySelectorAll("#shot-preset-btns .pill-btn").forEach(b => b.classList.toggle("active", b.dataset.shot === state.shotType));
+  if (SHOT_PRESETS[state.shotType]) {
+    document.getElementById("tag-shot-name").textContent = SHOT_PRESETS[state.shotType].name;
+    document.getElementById("shot-desc-text").textContent = SHOT_PRESETS[state.shotType].desc;
+  }
+  document.getElementById("tag-cam-dist").textContent = `${state.camDist.toFixed(2)} m`;
+  document.getElementById("val-cam-dist").textContent = `${state.camDist.toFixed(2)} m`;
+  document.getElementById("sl-cam-dist").value = state.camDist;
+  document.getElementById("num-cam-dist").value = state.camDist.toFixed(2);
+
+  // Pane 2: Optics
+  document.getElementById("tag-hfov").textContent = `${opt.hfovDeg.toFixed(1)}° HFOV`;
+  document.getElementById("val-focal").textContent = `${state.focalLength} mm`;
+  document.getElementById("sl-focal").value = state.focalLength;
+  document.getElementById("num-focal").value = state.focalLength;
+  document.querySelectorAll("#focal-preset-btns .pill-btn").forEach(b => b.classList.toggle("active", parseInt(b.dataset.focal, 10) === Math.round(state.focalLength)));
+
+  document.getElementById("val-aperture").textContent = `T/${state.aperture.toFixed(2).replace(/\.00$/, '.0')}`;
+  document.getElementById("sl-aperture").value = state.aperture;
+  document.getElementById("num-aperture").value = state.aperture;
+  document.querySelectorAll("#aperture-preset-btns .pill-btn").forEach(b => b.classList.toggle("active", Math.abs(parseFloat(b.dataset.ap) - state.aperture) < 0.08));
+
+  document.getElementById("tag-blades").textContent = `${state.blades} Palas`;
+  document.getElementById("val-blades").textContent = `${state.blades} palas`;
+  document.getElementById("tag-squeeze").textContent = state.squeeze === 1.0 ? "1.0x Esférico" : `${state.squeeze}x Anamórfico`;
+  document.querySelectorAll("#squeeze-btns .pill-btn").forEach(b => b.classList.toggle("active", Math.abs(parseFloat(b.dataset.sq) - state.squeeze) < 0.05));
+
+  // Pane 3: Focus & DoF
+  document.getElementById("val-focus-dist").textContent = `${state.focusDist.toFixed(2)} m`;
+  document.getElementById("sl-focus-dist").value = state.focusDist;
+  document.getElementById("num-focus-dist").value = state.focusDist.toFixed(2);
+  document.querySelectorAll("#focus-target-btns .pill-btn").forEach(b => b.classList.toggle("active", b.dataset.ftarget === state.focusTarget));
+
+  document.getElementById("read-dof-total").textContent = dofStr;
+  document.getElementById("read-dof-split").textContent = `Del: ${opt.frontPct}% | Det: ${opt.rearPct}%`;
+  document.getElementById("read-hyperfocal").textContent = `${opt.H_m.toFixed(2)} m`;
+  document.getElementById("read-hyper-half").textContent = `Desde ${(opt.H_m / 2).toFixed(2)} m → ∞`;
+  document.getElementById("read-dnear").textContent = `${opt.D_near_m.toFixed(2)} m`;
+  document.getElementById("read-dfar").textContent = opt.D_far_m === Infinity ? "∞ Infinito" : `${opt.D_far_m.toFixed(2)} m`;
+
+  // Pane 4: Actors
+  renderActorListUI();
+
+  // Pane 5: Locations
+  document.getElementById("tag-bg-dist").textContent = `${state.bgDist.toFixed(1)} m`;
+  document.getElementById("val-bg-dist").textContent = `${state.bgDist.toFixed(1)} m detrás`;
+  document.getElementById("val-haze").textContent = `${state.haze}%`;
+  document.getElementById("val-kelvin").textContent = `${state.kelvin}K`;
+  document.getElementById("val-key-angle").textContent = `${state.keyAngle}°`;
+
+  // Pane 6: Camera Rig
+  document.getElementById("val-cam-y").textContent = `${state.camHeight.toFixed(2)} m`;
+  document.getElementById("sl-cam-y").value = state.camHeight;
+  document.getElementById("val-cam-pitch").textContent = `${state.camPitch.toFixed(1)}°`;
+  document.getElementById("sl-cam-pitch").value = state.camPitch;
+  document.getElementById("val-cam-yaw").textContent = `${state.camYaw}°`;
+  document.getElementById("sl-cam-yaw").value = state.camYaw;
+  document.getElementById("val-cam-roll").textContent = `${state.camRoll}° | ${state.camPanX.toFixed(2)}m`;
+
+  // Pane 7: Sensor
+  document.getElementById("tag-crop").textContent = `Crop ${opt.cropFactor.toFixed(2)}x`;
+  document.getElementById("val-coc").textContent = `${state.cocLimit.toFixed(3)} mm`;
+}
+
+// ============================================================================
+// MOTOR DE RENDERIZADO DEL VISOR PRINCIPAL Y MODOS TÉCNICOS
+// ============================================================================
+const mainCanvas = document.getElementById("main-canvas");
+const mainCtx = mainCanvas.getContext("2d");
+const pipCanvas = document.getElementById("pip-canvas");
+const pipCtx = pipCanvas.getContext("2d");
+
+// Keep track of screen bounding boxes of actors for click-to-select/focus!
+let actorScreenBounds = [];
+
+function resizeCanvas(c) {
+  const rect = c.parentElement.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(10, Math.floor(rect.width * dpr));
+  const h = Math.max(10, Math.floor(rect.height * dpr));
+  if (c.width !== w || c.height !== h) {
+    c.width = w;
+    c.height = h;
+  }
+  return { w, h, dpr };
+}
+
+function drawPolygonBokeh(ctx, x, y, rx, ry, blades) {
+  ctx.beginPath();
+  if (blades >= 11) {
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  } else {
+    for (let i = 0; i < blades; i++) {
+      const a = (i / blades) * Math.PI * 2;
+      const px = x + Math.cos(a) * rx;
+      const py = y + Math.sin(a) * ry;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+}
+
+function renderCameraView(ctx, w, h, dpr) {
+  const opt = computeOptics();
+  const rgbTint = kelvinToRGB(state.kelvin);
+
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+
+  const tanHalfVFOV = Math.tan(opt.vfovRad / 2);
+  const fovScaleY = (h / 2) / tanHalfVFOV;
+  const fovScaleX = (w / 2) / (tanHalfVFOV * (w / h) * state.squeeze);
+
+  let liveDist = state.camDist;
+  let liveYawOff = 0;
+  let shakeX = 0, shakeY = 0;
+
+  if (state.rigMotion === "handheld") {
+    shakeX = Math.sin(state.time * 2.4) * 0.014 + Math.cos(state.time * 5.9) * 0.005;
+    shakeY = Math.cos(state.time * 2.1) * 0.014 + Math.sin(state.time * 6.4) * 0.005;
+  } else if (state.rigMotion === "push_in") {
+    const wave = (Math.sin(state.time * 0.85) + 1) * 0.5;
+    liveDist = Math.max(0.45, state.camDist * (0.65 + 0.55 * wave));
+  } else if (state.rigMotion === "orbit") {
+    liveYawOff = Math.sin(state.time * 0.7) * 30;
+  }
+
+  const totalYawRad = ((state.camYaw + liveYawOff) * Math.PI) / 180;
+  const pitchRad = (state.camPitch * Math.PI) / 180;
+  const rollRad = (state.camRoll * Math.PI) / 180;
+
+  const camX = Math.sin(totalYawRad) * liveDist + state.camPanX + shakeX;
+  const camY = state.camHeight + shakeY;
+  const camZ = -Math.cos(totalYawRad) * liveDist;
+
+  function worldToCam(wx, wy, wz) {
+    const dx = wx - camX;
+    const dy = wy - camY;
+    const dz = wz - camZ;
+    const cosY = Math.cos(-totalYawRad), sinY = Math.sin(-totalYawRad);
+    const rx = dx * cosY + dz * sinY;
+    const rz1 = -dx * sinY + dz * cosY;
+    const cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
+    const ry = dy * cosP - rz1 * sinP;
+    const rz = dy * sinP + rz1 * cosP;
+    return { cx: rx, cy: ry, cz: rz };
+  }
+
+  function project(wx, wy, wz) {
+    const { cx, cy, cz } = worldToCam(wx, wy, wz);
+    if (cz <= 0.12) return null;
+    return {
+      sx: w / 2 + (cx / cz) * fovScaleX,
+      sy: h / 2 - (cy / cz) * fovScaleY,
+      cz,
+      scale: fovScaleY / cz
+    };
+  }
+
+  function cocToPx(coc_mm) {
+    return Math.min(90 * dpr, Math.max(0, (coc_mm / state.sensorH) * h));
+  }
+
+  // Apply Dutch Roll
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(rollRad);
+  ctx.translate(-w / 2, -h / 2);
+
+  // 1. CLEAR & UNDERSTANDABLE 3D ENVIRONMENT SKY, WALLS & FLOOR
+  const horP = project(camX + Math.sin(totalYawRad) * 120, camY, camZ + Math.cos(totalYawRad) * 120);
+  const horizonY = horP ? horP.sy : h * 0.52;
+
+  const locPalettes = {
+    studio:    { skyTop: "#161d2a", skyBot: "#293548", flTop: "#242f42", flBot: "#0f141d", accent: "#38bdf8" },
+    cyberpunk: { skyTop: "#050712", skyBot: "#181436", flTop: "#121324", flBot: "#05060c", accent: "#f43f5e" },
+    cafe:      { skyTop: "#1f1610", skyBot: "#3b281c", flTop: "#2c1d14", flBot: "#120b07", accent: "#fbbf24" },
+    warehouse: { skyTop: "#0d1117", skyBot: "#1f2733", flTop: "#181e26", flBot: "#090c10", accent: "#94a3b8" },
+    forest:    { skyTop: "#071714", skyBot: "#16382e", flTop: "#12261e", flBot: "#06100c", accent: "#34d399" },
+    desert:    { skyTop: "#291528", skyBot: "#7c3f2c", flTop: "#5c3422", flBot: "#24120b", accent: "#fb923c" },
+    corridor:  { skyTop: "#09111e", skyBot: "#162944", flTop: "#132238", flBot: "#060c16", accent: "#22d3ee" },
+    rooftop:   { skyTop: "#0f172a", skyBot: "#3b2d54", flTop: "#1e2436", flBot: "#0b0e17", accent: "#a855f7" }
+  };
+  const pal = locPalettes[state.location] || locPalettes.studio;
+
+  const skyG = ctx.createLinearGradient(0, 0, 0, Math.max(10, horizonY));
+  skyG.addColorStop(0, pal.skyTop);
+  skyG.addColorStop(1, pal.skyBot);
+  ctx.fillStyle = skyG;
+  ctx.fillRect(-w * 0.3, -h * 0.3, w * 1.6, horizonY + h * 0.3);
+
+  const flG = ctx.createLinearGradient(0, horizonY, 0, h * 1.3);
+  flG.addColorStop(0, pal.flTop);
+  flG.addColorStop(1, pal.flBot);
+  ctx.fillStyle = flG;
+  ctx.fillRect(-w * 0.3, horizonY, w * 1.6, h * 1.5);
+
+  // 2. PERSPECTIVE FLOOR METRIC GRID & DISTANCE RULERS (Makes the 3D space 100% understandable!)
+  ctx.save();
+  for (let gz = -2; gz <= 26; gz += 1) {
+    const p1 = project(-7, 0, gz);
+    const p2 = project(7, 0, gz);
+    if (p1 && p2) {
+      const coc = opt.getCoCAtDistance(p1.cz);
+      const inFocus = coc <= state.cocLimit * 1.15;
+      if (state.peaking && inFocus) {
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.85)";
+        ctx.lineWidth = 2.2 * dpr;
+      } else {
+        ctx.strokeStyle = gz === 0
+          ? "rgba(245, 158, 11, 0.45)"
+          : `rgba(148, 163, 184, ${Math.max(0.05, 0.26 - gz * 0.008)})`;
+        ctx.lineWidth = (gz === 0 ? 1.8 : 1.0) * dpr;
+      }
+      ctx.beginPath();
+      ctx.moveTo(p1.sx, p1.sy);
+      ctx.lineTo(p2.sx, p2.sy);
+      ctx.stroke();
+
+      // Distance marker label on the floor every 2 meters
+      if (gz >= 0 && gz % 2 === 0 && gz <= 16) {
+        const pm = project(-1.8, 0, gz);
+        if (pm && pm.sy > horizonY + 8 * dpr && pm.sy < h - 20 * dpr) {
+          ctx.fillStyle = "rgba(203, 213, 225, 0.45)";
+          ctx.font = `600 ${Math.max(8, Math.min(13, pm.scale * 0.09))}px "JetBrains Mono", monospace`;
+          ctx.fillText(`Z:${gz}m`, pm.sx, pm.sy - 3 * dpr);
+        }
+      }
+    }
+  }
+  for (let gx = -6; gx <= 6; gx += 1) {
+    const p1 = project(gx, 0, -2);
+    const p2 = project(gx, 0, 26);
+    if (p1 && p2) {
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.14)";
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(p1.sx, p1.sy);
+      ctx.lineTo(p2.sx, p2.sy);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // 3. 3D LOCATION ARCHITECTURE AT z = state.bgDist
+  const bgZ = state.bgDist;
+  const bgRef = project(0, 1.6, bgZ);
+  if (bgRef) {
+    const bgCoC = opt.getCoCAtDistance(bgRef.cz);
+    const bgBlur = cocToPx(bgCoC);
+
+    ctx.save();
+    if (bgBlur > 0.8) {
+      ctx.filter = `blur(${Math.min(30, bgBlur * 0.55).toFixed(1)}px)`;
+    }
+
+    if (state.location === "studio") {
+      // Cyclorama back wall curve + 2 studio softbox stands + depth chart board
+      const wL = project(-4.5, 0, bgZ), wR = project(4.5, 3.6, bgZ);
+      if (wL && wR) {
+        ctx.fillStyle = "rgba(51, 65, 85, 0.55)";
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.4)";
+        ctx.lineWidth = 2 * dpr;
+        ctx.fillRect(wL.sx, wR.sy, wR.sx - wL.sx, wL.sy - wR.sy);
+        ctx.strokeRect(wL.sx, wR.sy, wR.sx - wL.sx, wL.sy - wR.sy);
+      }
+      // Siemens Focus Star / Chart on the back wall
+      const chartP = project(0, 1.8, bgZ);
+      if (chartP) {
+        const r = 0.55 * chartP.scale;
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(chartP.sx - r, chartP.sy - r, r * 2, r * 2);
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = Math.max(1, r * 0.04);
+        for (let a = 0; a < Math.PI; a += Math.PI / 8) {
+          ctx.beginPath();
+          ctx.moveTo(chartP.sx - Math.cos(a) * r * 0.85, chartP.sy - Math.sin(a) * r * 0.85);
+          ctx.lineTo(chartP.sx + Math.cos(a) * r * 0.85, chartP.sy + Math.sin(a) * r * 0.85);
+          ctx.stroke();
+        }
+      }
+    } else if (state.location === "forest") {
+      // Multi-layer 3D pine/oak tree trunks and canopies
+      [-4.2, -2.6, -1.3, -0.4, 0.9, 2.1, 3.6].forEach((tx, idx) => {
+        const tz = bgZ + (idx % 3) * 1.8;
+        const bP = project(tx, 0, tz);
+        const tP = project(tx, 4.2, tz);
+        if (bP && tP) {
+          const trunkW = 0.28 * bP.scale;
+          ctx.fillStyle = "#1c1917";
+          ctx.fillRect(bP.sx - trunkW / 2, tP.sy, trunkW, bP.sy - tP.sy);
+          ctx.fillStyle = idx % 2 === 0 ? "#064e3b" : "#065f46";
+          ctx.beginPath();
+          ctx.arc(tP.sx, tP.sy + (bP.sy - tP.sy) * 0.25, trunkW * 3.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    } else if (state.location === "corridor") {
+      // Repeating 3D sci-fi portal frames showing dramatic linear perspective
+      for (let cz = 2; cz <= bgZ + 6; cz += 2.2) {
+        const bl = project(-2.4, 0, cz), tr = project(2.4, 3.2, cz);
+        if (bl && tr) {
+          ctx.strokeStyle = "#22d3ee";
+          ctx.lineWidth = Math.max(1.5, 0.06 * bl.scale);
+          ctx.strokeRect(bl.sx, tr.sy, tr.sx - bl.sx, bl.sy - tr.sy);
+        }
+      }
+    } else {
+      // Urban / Cafe / Warehouse / Rooftop architectural buildings & windows
+      [-4.6, -2.8, -1.2, 0.4, 2.0, 3.8].forEach((bx, i) => {
+        const bz = bgZ + (i % 2) * 2.2;
+        const bP = project(bx, 0, bz);
+        const tP = project(bx, 3.8 + (i % 3) * 0.8, bz);
+        if (bP && tP) {
+          const bw = 0.95 * bP.scale;
+          const bh = bP.sy - tP.sy;
+          ctx.fillStyle = i % 2 === 0 ? "#131c2e" : "#1e293b";
+          ctx.fillRect(bP.sx - bw / 2, tP.sy, bw, bh);
+          ctx.fillStyle = pal.accent;
+          ctx.globalAlpha = 0.35;
+          for (let wy = 0.6; wy < 3.4; wy += 0.65) {
+            const wp = project(bx, wy, bz);
+            if (wp) ctx.fillRect(wp.sx - bw * 0.28, wp.sy, bw * 0.56, bw * 0.28);
+          }
+          ctx.globalAlpha = 1.0;
+        }
+      });
+    }
+    ctx.restore();
+
+    // 4. REAL-TIME BOKEH SPECULAR HIGHLIGHTS (Iris Blades & Anamorphic Squeeze)
+    SCENE_LIGHTS.forEach(lt => {
+      const lz = Math.max(1.5, state.bgDist * lt.zMult);
+      const lp = project(lt.x, lt.y, lz);
+      if (!lp) return;
+
+      const normX = (lp.sx - w / 2) / (w / 2);
+      const coc = opt.getCoCAtDistance(lp.cz, normX);
+      let radPx = Math.max(3 * dpr, cocToPx(coc) * 0.85 + lt.size * lp.scale * 0.3);
+
+      // Helios swirly bokeh effect compresses radial edge
+      let rx = radPx / Math.pow(state.squeeze, 0.65);
+      let ry = radPx * Math.pow(state.squeeze, 0.35);
+      if (state.lensCharacter === "helios") {
+        const distFromCenter = Math.min(1, Math.hypot(lp.sx - w / 2, lp.sy - h / 2) / (w * 0.5));
+        rx *= (1 - distFromCenter * 0.38);
+      }
+
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.75, Math.max(0.14, 0.55 / Math.sqrt(Math.max(1, radPx / (12 * dpr)))));
+      const col = lt.type === 0 ? pal.accent : (lt.type === 1 ? "#fbbf24" : "#38bdf8");
+      const grad = ctx.createRadialGradient(lp.sx, lp.sy, rx * 0.1, lp.sx, lp.sy, Math.max(rx, ry));
+      grad.addColorStop(0, col);
+      grad.addColorStop(0.82, col);
+      grad.addColorStop(0.95, "#ffffff");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grad;
+
+      drawPolygonBokeh(ctx, lp.sx, lp.sy, rx, ry, state.blades);
+      ctx.fill();
+
+      // Anamorphic streak flare
+      if ((state.squeeze > 1.05 || state.lensCharacter === "anamorphic_vintage") && lt.type === 0) {
+        const sw = rx * 8.5 * Math.max(1.3, state.squeeze);
+        const sg = ctx.createLinearGradient(lp.sx - sw, lp.sy, lp.sx + sw, lp.sy);
+        sg.addColorStop(0, "rgba(56, 189, 248, 0)");
+        sg.addColorStop(0.5, "rgba(56, 189, 248, 0.42)");
+        sg.addColorStop(1, "rgba(56, 189, 248, 0)");
+        ctx.fillStyle = sg;
+        ctx.fillRect(lp.sx - sw, lp.sy - 2 * dpr, sw * 2, 4 * dpr);
+      }
+      ctx.restore();
+    });
+  }
+
+  // 5. RENDER ALL CHARACTERS IN SCENE (SORTED BACK-TO-FRONT BY DEPTH cz)
+  actorScreenBounds = [];
+  const projectedActors = state.actors
+    .map((act, idx) => {
+      const eyeY = (act.pose === "sit" ? act.height * 0.72 : act.height * 0.92);
+      const pEye = project(act.x, eyeY, act.z);
+      const pFoot = project(act.x, 0, act.z);
+      return pEye ? { act, idx, pEye, pFoot, cz: pEye.cz } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.cz - a.cz); // Farther characters drawn first!
+
+  projectedActors.forEach(item => {
+    const { act, idx, pEye, pFoot, cz } = item;
+    const normX = (pEye.sx - w / 2) / (w / 2);
+    const coc = opt.getCoCAtDistance(cz, normX);
+    const blurPx = cocToPx(coc);
+    const sScale = pEye.scale;
+    const headR = 0.115 * act.height * (sScale / 1.75);
+
+    ctx.save();
+    if (blurPx > 0.75) {
+      ctx.filter = `blur(${Math.min(28, blurPx * 0.6).toFixed(1)}px)`;
+    }
+
+    const cx = pEye.sx;
+    const eyeY = pEye.sy;
+    const shoulderY = eyeY + headR * 1.55;
+    const shoulderW = headR * 3.9;
+    const hipY = shoulderY + headR * (act.pose === "sit" ? 3.6 : 4.8);
+    const footY = pFoot ? pFoot.sy : (hipY + headR * 5.5);
+
+    // Floor contact shadow under character
+    if (pFoot) {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+      ctx.beginPath();
+      ctx.ellipse(pFoot.sx, pFoot.sy, shoulderW * 0.65, Math.max(3 * dpr, shoulderW * 0.18), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Legs
+    ctx.fillStyle = "#1e293b";
+    const legSpread = act.pose === "walk" ? 0.42 : 0.32;
+    ctx.beginPath();
+    ctx.roundRect(cx - shoulderW * legSpread, hipY - headR * 0.2, shoulderW * 0.28, Math.max(8, footY - hipY), headR * 0.2);
+    ctx.roundRect(cx + shoulderW * 0.04, hipY - headR * 0.2, shoulderW * 0.28, Math.max(8, footY - hipY), headR * 0.2);
+    ctx.fill();
+
+    // Torso / Jacket in Actor's chosen color + Key Light shading
+    const keyDir = Math.sin(((state.keyAngle - state.camYaw) * Math.PI) / 180);
+    const torsoG = ctx.createLinearGradient(cx - shoulderW * 0.6 * Math.sign(keyDir || 1), shoulderY, cx + shoulderW * 0.6 * Math.sign(keyDir || 1), hipY);
+    torsoG.addColorStop(0, act.color);
+    torsoG.addColorStop(1, "#0f172a");
+
+    ctx.fillStyle = torsoG;
+    ctx.beginPath();
+    ctx.roundRect(cx - shoulderW * 0.52, shoulderY, shoulderW * 1.04, hipY - shoulderY, headR * 0.45);
+    ctx.fill();
+
+    // Arms (if gesturing / action pose, raise forearm)
+    ctx.strokeStyle = act.color;
+    ctx.lineWidth = Math.max(3, headR * 0.55);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - shoulderW * 0.52, shoulderY + headR * 0.4);
+    if (act.pose === "action") {
+      ctx.lineTo(cx - shoulderW * 0.78, shoulderY + headR * 2.0);
+      ctx.lineTo(cx - shoulderW * 0.35, shoulderY + headR * 1.5);
+    } else {
+      ctx.lineTo(cx - shoulderW * 0.60, hipY);
+    }
+    ctx.moveTo(cx + shoulderW * 0.52, shoulderY + headR * 0.4);
+    ctx.lineTo(cx + shoulderW * 0.60, hipY);
+    ctx.stroke();
+
+    // Neck
+    ctx.fillStyle = act.skin;
+    ctx.fillRect(cx - headR * 0.36, eyeY + headR * 0.7, headR * 0.72, headR * 0.95);
+
+    // Head
+    const headCY = eyeY - headR * 0.06;
+    ctx.fillStyle = act.skin;
+    ctx.beginPath();
+    ctx.ellipse(cx, headCY, headR * 0.88, headR * 1.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = "#18181b";
+    ctx.beginPath();
+    ctx.ellipse(cx, headCY - headR * 0.38, headR * 0.92, headR * 0.82, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes & Facial direction
+    const relYaw = ((act.yaw - state.camYaw) * Math.PI) / 180;
+    const faceShiftX = Math.sin(relYaw) * headR * 0.45;
+    if (Math.cos(relYaw) > -0.25) {
+      const eyeSp = headR * 0.36 * Math.max(0.25, Math.cos(relYaw));
+      [-1, 1].forEach(side => {
+        const ex = cx + faceShiftX + side * eyeSp;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.ellipse(ex, eyeY, headR * 0.14, headR * 0.08, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#0f172a";
+        ctx.beginPath();
+        ctx.arc(ex, eyeY, headR * 0.065, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // Focus Peaking outline if in focus
+    const inFocus = coc <= state.cocLimit * 1.18;
+    if (state.peaking && inFocus) {
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2.5 * dpr;
+      ctx.beginPath();
+      ctx.ellipse(cx, headCY, headR * 0.92, headR * 1.16, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Subtle actor badge above head (only if HUD is on)
+    if (state.guideHud) {
+      const isSel = idx === state.selectedActorIdx;
+      const isFoc = inFocus;
+      ctx.save();
+      ctx.font = `600 ${10 * dpr}px "JetBrains Mono", monospace`;
+      const lbl = `${act.name} · ${cz.toFixed(2)}m ${isFoc ? '● FOCO' : ''}`;
+      const tw = ctx.measureText(lbl).width + 12 * dpr;
+      const bx = cx - tw / 2;
+      const by = Math.max(18 * dpr, eyeY - headR * 1.85);
+      ctx.fillStyle = isSel ? "rgba(245, 158, 11, 0.88)" : "rgba(15, 23, 42, 0.78)";
+      ctx.fillRect(bx, by - 13 * dpr, tw, 17 * dpr);
+      ctx.fillStyle = isSel ? "#05070a" : (isFoc ? "#34d399" : "#cbd5e1");
+      ctx.fillText(lbl, bx + 6 * dpr, by - 1 * dpr);
+      ctx.restore();
+    }
+
+    // Store bounding box for mouse click selection
+    actorScreenBounds.push({
+      idx,
+      x1: cx - shoulderW * 0.65,
+      x2: cx + shoulderW * 0.65,
+      y1: eyeY - headR * 1.4,
+      y2: footY
+    });
+  });
+
+  ctx.restore(); // End Dutch Roll
+
+  // 6. ATMOSPHERIC HAZE, VIGNETTE & ND FILTER
+  if (state.haze > 0) {
+    ctx.fillStyle = `rgba(${rgbTint.r}, ${rgbTint.g}, ${rgbTint.b}, ${(state.haze / 100) * 0.22})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  if (state.vignette > 0) {
+    const vigG = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.72);
+    vigG.addColorStop(0, "rgba(0,0,0,0)");
+    vigG.addColorStop(1, `rgba(0,0,0,${(state.vignette / 100) * 0.78})`);
+    ctx.fillStyle = vigG;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // 7. ASPECT RATIO MATTE BARS & GUIDES
+  const targetRatio = state.aspectRatio;
+  const cRatio = w / h;
+  let fw = w, fh = h, fx = 0, fy = 0;
+  if (cRatio > targetRatio) {
+    fw = h * targetRatio;
+    fx = (w - fw) / 2;
+    ctx.fillStyle = "rgba(4, 6, 10, 0.90)";
+    ctx.fillRect(0, 0, fx, h);
+    ctx.fillRect(fx + fw, 0, fx, h);
+  } else {
+    fh = w / targetRatio;
+    fy = (h - fh) / 2;
+    ctx.fillStyle = "rgba(4, 6, 10, 0.90)";
+    ctx.fillRect(0, 0, w, fy);
+    ctx.fillRect(0, fy + fh, w, fy);
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 1 * dpr;
+  ctx.strokeRect(fx, fy, fw, fh);
+
+  if (state.guideSafe) {
+    ctx.strokeStyle = "rgba(6, 182, 212, 0.22)";
+    ctx.setLineDash([4 * dpr, 4 * dpr]);
+    ctx.strokeRect(fx + fw * 0.05, fy + fh * 0.05, fw * 0.9, fh * 0.9);
+    ctx.setLineDash([]);
+  }
+
+  if (state.guideThirds) {
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.beginPath();
+    ctx.moveTo(fx + fw / 3, fy); ctx.lineTo(fx + fw / 3, fy + fh);
+    ctx.moveTo(fx + (fw * 2) / 3, fy); ctx.lineTo(fx + (fw * 2) / 3, fy + fh);
+    ctx.moveTo(fx, fy + fh / 3); ctx.lineTo(fx + fw, fy + fh / 3);
+    ctx.moveTo(fx, fy + (fh * 2) / 3); ctx.lineTo(fx + fw, fy + (fh * 2) / 3);
+    ctx.stroke();
+  }
+
+  if (state.guideGolden) {
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.25)";
+    ctx.beginPath();
+    ctx.moveTo(fx + fw * 0.382, fy); ctx.lineTo(fx + fw * 0.382, fy + fh);
+    ctx.moveTo(fx + fw * 0.618, fy); ctx.lineTo(fx + fw * 0.618, fy + fh);
+    ctx.moveTo(fx, fy + fh * 0.382); ctx.lineTo(fx + fw, fy + fh * 0.382);
+    ctx.moveTo(fx, fy + fh * 0.618); ctx.lineTo(fx + fw, fy + fh * 0.618);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// Render Top-Down Blocking Plan View (used in PiP Radar AND full-screen Top-Down mode)
+function renderTopDownMap(ctx, w, h, dpr, isFullScreen) {
+  const opt = computeOptics();
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = "#080b11";
+  ctx.fillRect(0, 0, w, h);
+
+  const maxM = Math.max(8, state.camDist + state.bgDist + 1.5);
+  const pxPerM = (w * 0.78) / maxM;
+  const camX = w * 0.12;
+  const cy = h * 0.52;
+
+  // Metric grid
+  ctx.strokeStyle = "rgba(56, 72, 99, 0.35)";
+  ctx.lineWidth = 1 * dpr;
+  ctx.fillStyle = "#64748b";
+  ctx.font = `${(isFullScreen ? 10.5 : 8.5) * dpr}px "JetBrains Mono", monospace`;
+
+  const stepM = maxM > 14 ? 2 : 1;
+  for (let m = 0; m <= Math.ceil(maxM); m += stepM) {
+    const gx = camX + m * pxPerM;
+    if (gx > w - 6) break;
+    ctx.beginPath();
+    ctx.moveTo(gx, 10 * dpr);
+    ctx.lineTo(gx, h - 16 * dpr);
+    ctx.stroke();
+    ctx.fillText(`${m}m`, gx - 6 * dpr, h - 4 * dpr);
+  }
+
+  // Green Depth of Field Zone (D_near to D_far)
+  const nearX = camX + opt.D_near_m * pxPerM;
+  const farX = opt.D_far_m === Infinity ? w : Math.min(w, camX + opt.D_far_m * pxPerM);
+  ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
+  ctx.fillRect(nearX, 12 * dpr, Math.max(2 * dpr, farX - nearX), h - 30 * dpr);
+
+  ctx.strokeStyle = "#10b981";
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.beginPath();
+  ctx.moveTo(nearX, 12 * dpr); ctx.lineTo(nearX, h - 18 * dpr);
+  if (farX < w) {
+    ctx.moveTo(farX, 12 * dpr); ctx.lineTo(farX, h - 18 * dpr);
+  }
+  ctx.stroke();
+
+  // Horizontal FOV Cone
+  const halfA = opt.hfovRad / 2;
+  const coneLen = w - camX;
+  const spreadY = Math.tan(halfA) * coneLen;
+  ctx.fillStyle = "rgba(6, 182, 212, 0.10)";
+  ctx.strokeStyle = "rgba(6, 182, 212, 0.75)";
+  ctx.beginPath();
+  ctx.moveTo(camX, cy);
+  ctx.lineTo(camX + coneLen, cy - spreadY);
+  ctx.lineTo(camX + coneLen, cy + spreadY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Background wall line
+  const bgX = Math.min(w - 4 * dpr, camX + (state.camDist + state.bgDist) * pxPerM);
+  ctx.strokeStyle = "#a855f7";
+  ctx.lineWidth = 2.5 * dpr;
+  ctx.beginPath();
+  ctx.moveTo(bgX, cy - 45 * dpr);
+  ctx.lineTo(bgX, cy + 45 * dpr);
+  ctx.stroke();
+
+  // Draw all actors on the Top-Down map!
+  state.actors.forEach((act, idx) => {
+    const ax = camX + (state.camDist + act.z) * pxPerM;
+    const ay = cy + act.x * pxPerM;
+    ctx.fillStyle = act.color;
+    ctx.beginPath();
+    ctx.arc(ax, ay, (isFullScreen ? 6.5 : 4.5) * dpr, 0, Math.PI * 2);
+    ctx.fill();
+    if (idx === state.selectedActorIdx) {
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.stroke();
+    }
+    if (isFullScreen) {
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fillText(act.name, ax - 18 * dpr, ay - 9 * dpr);
+    }
+  });
+
+  // Camera icon at left of plan view
+  ctx.fillStyle = "#f59e0b";
+  ctx.fillRect(camX - 5 * dpr, cy - 4 * dpr, 9 * dpr, 8 * dpr);
+
+  ctx.restore();
+}
+
+function renderStage3DMap(ctx, w, h, dpr) {
+  const opt = computeOptics();
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#070a10";
+  ctx.fillRect(0, 0, w, h);
+
+  const yaw = (state.stageOrbitYaw * Math.PI) / 180;
+  const pitch = (state.stageOrbitPitch * Math.PI) / 180;
+  const scale = Math.min(w, h) * 0.085;
+
+  function p3d(wx, wy, wz) {
+    const tx = wx, ty = wy - 1.0, tz = wz - 1.0;
+    const x1 = tx * Math.cos(yaw) - tz * Math.sin(yaw);
+    const z1 = tx * Math.sin(yaw) + tz * Math.cos(yaw);
+    const y2 = ty * Math.cos(pitch) - z1 * Math.sin(pitch);
+    const z2 = ty * Math.sin(pitch) + z1 * Math.cos(pitch);
+    const persp = 15 / Math.max(4, 15 + z2);
+    return { x: w * 0.5 + x1 * scale * persp, y: h * 0.56 - y2 * scale * persp };
+  }
+
+  // Floor grid
+  ctx.strokeStyle = "rgba(56, 72, 99, 0.45)";
+  ctx.lineWidth = 1 * dpr;
+  for (let i = -4; i <= 4; i++) {
+    const a = p3d(i, 0, -4), b = p3d(i, 0, 10);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  for (let z = -4; z <= 10; z++) {
+    const a = p3d(-4, 0, z), b = p3d(4, 0, z);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+
+  // Actors in 3D Stage
+  state.actors.forEach(act => {
+    const f = p3d(act.x, 0, act.z);
+    const t = p3d(act.x, act.height, act.z);
+    ctx.strokeStyle = act.color;
+    ctx.lineWidth = 4.5 * dpr;
+    ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    ctx.fillStyle = act.color;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 5 * dpr, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Camera & Frustum in external 3D stage view
+  const cYaw = (state.camYaw * Math.PI) / 180;
+  const cx = Math.sin(cYaw) * state.camDist + state.camPanX;
+  const cz = -Math.cos(cYaw) * state.camDist;
+  const pCam = p3d(cx, state.camHeight, cz);
+  const pCamFl = p3d(cx, 0, cz);
+
+  ctx.strokeStyle = "#f59e0b";
+  ctx.lineWidth = 2 * dpr;
+  ctx.beginPath(); ctx.moveTo(pCamFl.x, pCamFl.y); ctx.lineTo(pCam.x, pCam.y); ctx.stroke();
+
+  const hw = Math.min(3.5, opt.fieldW_m / 2), hh = Math.min(2.5, opt.fieldH_m / 2);
+  const corners = [p3d(-hw, 1.5 - hh, 0), p3d(hw, 1.5 - hh, 0), p3d(hw, 1.5 + hh, 0), p3d(-hw, 1.5 + hh, 0)];
+  ctx.strokeStyle = "rgba(6, 182, 212, 0.65)";
+  corners.forEach(c => {
+    ctx.beginPath(); ctx.moveTo(pCam.x, pCam.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+  });
+
+  ctx.restore();
+}
+
+function renderSideElevationMap(ctx, w, h, dpr) {
+  const opt = computeOptics();
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#070a10";
+  ctx.fillRect(0, 0, w, h);
+
+  const floorY = h * 0.80;
+  const camX = w * 0.14;
+  const pxPerM = Math.min((w * 0.72) / Math.max(5, state.camDist + 3), (h * 0.6) / 2.5);
+
+  ctx.strokeStyle = "#475569";
+  ctx.lineWidth = 2 * dpr;
+  ctx.beginPath(); ctx.moveTo(10, floorY); ctx.lineTo(w - 10, floorY); ctx.stroke();
+
+  const camY = floorY - state.camHeight * pxPerM;
+  const pitchRad = (state.camPitch * Math.PI) / 180;
+  const halfV = opt.vfovRad / 2;
+  const ray = w - camX;
+
+  ctx.fillStyle = "rgba(245, 158, 11, 0.12)";
+  ctx.strokeStyle = "rgba(245, 158, 11, 0.75)";
+  ctx.beginPath();
+  ctx.moveTo(camX, camY);
+  ctx.lineTo(camX + Math.cos(pitchRad + halfV) * ray, camY - Math.sin(pitchRad + halfV) * ray);
+  ctx.lineTo(camX + Math.cos(pitchRad - halfV) * ray, camY - Math.sin(pitchRad - halfV) * ray);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  state.actors.forEach(act => {
+    const ax = camX + (state.camDist + act.z) * pxPerM;
+    const ay = floorY - act.height * pxPerM;
+    ctx.strokeStyle = act.color;
+    ctx.lineWidth = 4 * dpr;
+    ctx.beginPath(); ctx.moveTo(ax, floorY); ctx.lineTo(ax, ay); ctx.stroke();
+    ctx.fillStyle = act.color;
+    ctx.beginPath(); ctx.arc(ax, ay, 5 * dpr, 0, Math.PI * 2); ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+// ============================================================================
+// EVENT LISTENERS PARA DOCK, DRAWER Y CONTROLES
+// ============================================================================
+
+// Left Photoshop Dock Switching
+const drawer = document.getElementById("tool-drawer");
+const drawerTitles = {
+  "pane-framing":   "1. Escala de Plano y Composición",
+  "pane-optics":    "2. Lentes, Focal y Apertura",
+  "pane-focus":     "3. Enfoque (1st AC) y DoF",
+  "pane-actors":    "4. Personajes en Escena (Blocking)",
+  "pane-locations": "5. Locaciones 3D e Iluminación",
+  "pane-rig":       "6. Trípode, Ángulos y Movimiento",
+  "pane-sensor":    "7. Cámara, Sensor y Exposición",
+  "pane-shotlist":  "8. Planilla de Cámara Guardada"
+};
+
+document.querySelectorAll("#tool-dock .dock-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const targetPane = btn.dataset.pane;
+    const wasActive = btn.classList.contains("active") && !drawer.classList.contains("collapsed");
+
+    document.querySelectorAll("#tool-dock .dock-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tool-pane").forEach(p => p.classList.remove("active"));
+
+    if (wasActive) {
+      drawer.classList.add("collapsed");
+    } else {
+      btn.classList.add("active");
+      drawer.classList.remove("collapsed");
+      document.getElementById(targetPane).classList.add("active");
+      document.getElementById("drawer-title").textContent = drawerTitles[targetPane] || "";
+    }
+  });
+});
+
+document.getElementById("btn-close-drawer").addEventListener("click", () => {
+  drawer.classList.add("collapsed");
+  document.querySelectorAll("#tool-dock .dock-btn").forEach(b => b.classList.remove("active"));
+});
+
+// PiP Radar minimize toggle
+document.getElementById("pip-header").addEventListener("click", () => {
+  const pip = document.getElementById("pip-radar");
+  pip.classList.toggle("minimized");
+  document.getElementById("pip-toggle-icon").textContent = pip.classList.contains("minimized") ? "▸" : "▾";
+});
+
+// Main View Mode Tabs
+document.querySelectorAll("#main-view-tabs .mode-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    state.activeView = tab.dataset.view;
+    document.querySelectorAll("#main-view-tabs .mode-tab").forEach(t => t.classList.toggle("active", t === tab));
+  });
+});
+
+// Shot Presets
+document.querySelectorAll("#shot-preset-btns .pill-btn").forEach(btn => {
+  btn.addEventListener("click", () => applyShotPreset(btn.dataset.shot));
+});
+
+// Camera Distance & Framing Lock
+function setCamDist(val) {
+  state.camDist = Math.max(0.35, Math.min(25.0, parseFloat(val) || 1.85));
+  syncUI();
+}
+document.getElementById("sl-cam-dist").addEventListener("input", e => setCamDist(e.target.value));
+document.getElementById("num-cam-dist").addEventListener("change", e => setCamDist(e.target.value));
+
+document.querySelectorAll("#framing-lock-btns .pill-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.framingLock = btn.dataset.lock;
+    document.querySelectorAll("#framing-lock-btns .pill-btn").forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
+
+// Aspect Ratio & Guides
+document.querySelectorAll("#aspect-btns .pill-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.aspectRatio = parseFloat(btn.dataset.aspect);
+    document.getElementById("tag-aspect").textContent = btn.textContent;
+    document.querySelectorAll("#aspect-btns .pill-btn").forEach(b => b.classList.toggle("active", b === btn));
+  });
+});
+
+document.getElementById("btn-guide-thirds").addEventListener("click", e => {
+  state.guideThirds = !state.guideThirds;
+  e.currentTarget.classList.toggle("active", state.guideThirds);
+});
+document.getElementById("btn-guide-golden").addEventListener("click", e => {
+  state.guideGolden = !state.guideGolden;
+  e.currentTarget.classList.toggle("active", state.guideGolden);
+});
+document.getElementById("btn-guide-safe").addEventListener("click", e => {
+  state.guideSafe = !state.guideSafe;
+  e.currentTarget.classList.toggle("active", state.guideSafe);
+});
+document.getElementById("btn-guide-hud").addEventListener("click", e => {
+  state.guideHud = !state.guideHud;
+  e.currentTarget.classList.toggle("active", state.guideHud);
+});
+
+// Focal Length with Dolly-Zoom framing compensation
+function setFocal(val) {
+  const oldF = state.focalLength;
+  const newF = Math.max(10, Math.min(300, parseFloat(val) || 50));
+  state.focalLength = newF;
+  if (state.framingLock === "keep_framing") {
+    const oldTan = Math.tan(Math.atan(state.sensorH / (2 * oldF)));
+    const newTan = Math.tan(Math.atan(state.sensorH / (2 * newF)));
+    state.camDist = Math.max(0.35, Math.min(25.0, state.camDist * (oldTan / newTan)));
+  }
+  syncUI();
+}
+document.getElementById("sl-focal").addEventListener("input", e => setFocal(e.target.value));
+document.getElementById("num-focal").addEventListener("change", e => setFocal(e.target.value));
+document.querySelectorAll("#focal-preset-btns .pill-btn").forEach(b => {
+  b.addEventListener("click", () => setFocal(b.dataset.focal));
+});
+
+// Aperture & Iris Blades & Squeeze
+function setAperture(val) {
+  state.aperture = Math.max(0.95, Math.min(22, parseFloat(val) || 1.8));
+  syncUI();
+}
+document.getElementById("sl-aperture").addEventListener("input", e => setAperture(e.target.value));
+document.getElementById("num-aperture").addEventListener("change", e => setAperture(e.target.value));
+document.querySelectorAll("#aperture-preset-btns .pill-btn").forEach(b => {
+  b.addEventListener("click", () => setAperture(b.dataset.ap));
+});
+
+document.getElementById("sl-blades").addEventListener("input", e => {
+  state.blades = parseInt(e.target.value, 10);
+  syncUI();
+});
+document.querySelectorAll("#squeeze-btns .pill-btn").forEach(b => {
+  b.addEventListener("click", () => {
+    state.squeeze = parseFloat(b.dataset.sq);
+    syncUI();
+  });
+});
+document.getElementById("lens-character-select").addEventListener("change", e => {
+  state.lensCharacter = e.target.value;
+  if (state.lensCharacter === "cooke") state.kelvin = 6000;
+  else if (state.lensCharacter === "helios") state.vignette = 45;
+  syncUI();
+});
+document.getElementById("sl-vignette").addEventListener("input", e => {
+  state.vignette = parseInt(e.target.value, 10);
+  document.getElementById("val-vignette").textContent = `${state.vignette}%`;
+});
+
+// Focus Controls
+document.querySelectorAll("#focus-target-btns .pill-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.focusTarget = btn.dataset.ftarget;
+    document.getElementById("tag-focus-mode").textContent = btn.textContent.replace("🎯 ", "");
+    syncUI();
+  });
+});
+
+function setManualFocus(val) {
+  state.focusTarget = "manual";
+  state.focusDist = Math.max(0.35, Math.min(30.0, parseFloat(val) || 1.85));
+  document.getElementById("tag-focus-mode").textContent = "Manual S₁";
+  syncUI();
+}
+document.getElementById("sl-focus-dist").addEventListener("input", e => setManualFocus(e.target.value));
+document.getElementById("num-focus-dist").addEventListener("change", e => setManualFocus(e.target.value));
+
+document.getElementById("btn-peaking").addEventListener("click", e => {
+  state.peaking = !state.peaking;
+  e.currentTarget.classList.toggle("active", state.peaking);
+});
+document.getElementById("btn-split-diopter").addEventListener("click", e => {
+  state.splitDiopter = !state.splitDiopter;
+  e.currentTarget.classList.toggle("active", state.splitDiopter);
+});
+
+// Multi-Character Manager Controls
+document.getElementById("btn-add-actor").addEventListener("click", () => {
+  if (state.actors.length >= 6) return;
+  const idx = state.actors.length + 1;
+  const palette = ["#10b981", "#f59e0b", "#a855f7", "#06b6d4", "#e11d48"];
+  state.actors.push({
+    name: `Personaje ${idx}`,
+    x: ((idx % 2 === 0 ? 1 : -1) * 0.55 * idx) % 2.4,
+    z: idx * 0.9,
+    yaw: 0,
+    height: 1.74,
+    pose: "stand",
+    color: palette[idx % palette.length],
+    skin: "#d29979"
+  });
+  state.selectedActorIdx = state.actors.length - 1;
+  syncUI();
+});
+
+document.getElementById("btn-delete-actor").addEventListener("click", () => {
+  if (state.actors.length <= 1) return;
+  state.actors.splice(state.selectedActorIdx, 1);
+  state.selectedActorIdx = Math.max(0, state.selectedActorIdx - 1);
+  syncUI();
+});
+
+document.getElementById("inp-actor-name").addEventListener("input", e => {
+  const a = state.actors[state.selectedActorIdx];
+  if (a) { a.name = e.target.value; renderActorListUI(); }
+});
+document.getElementById("sl-actor-x").addEventListener("input", e => {
+  const a = state.actors[state.selectedActorIdx];
+  if (a) { a.x = parseFloat(e.target.value); syncUI(); }
+});
+document.getElementById("sl-actor-z").addEventListener("input", e => {
+  const a = state.actors[state.selectedActorIdx];
+  if (a) { a.z = parseFloat(e.target.value); syncUI(); }
+});
+document.getElementById("sl-actor-yaw").addEventListener("input", e => {
+  const a = state.actors[state.selectedActorIdx];
+  if (a) { a.yaw = parseInt(e.target.value, 10); syncUI(); }
+});
+document.getElementById("sl-actor-h").addEventListener("input", e => {
+  const a = state.actors[state.selectedActorIdx];
+  if (a) { a.height = parseFloat(e.target.value); syncUI(); }
+});
+document.getElementById("sel-actor-pose").addEventListener("change", e => {
+  const a = state.actors[state.selectedActorIdx];
+  if (a) { a.pose = e.target.value; syncUI(); }
+});
+document.querySelectorAll("#actor-color-btns .pill-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const a = state.actors[state.selectedActorIdx];
+    if (a) { a.color = btn.dataset.col; syncUI(); }
+  });
+});
+
+// Locations & Lighting
+document.querySelectorAll("#loc-cards-grid .loc-card").forEach(card => {
+  card.addEventListener("click", () => {
+    state.location = card.dataset.loc;
+    document.querySelectorAll("#loc-cards-grid .loc-card").forEach(c => c.classList.toggle("active", c === card));
+  });
+});
+document.getElementById("sl-bg-dist").addEventListener("input", e => {
+  state.bgDist = parseFloat(e.target.value);
+  syncUI();
+});
+document.getElementById("sl-haze").addEventListener("input", e => {
+  state.haze = parseInt(e.target.value, 10);
+  syncUI();
+});
+document.getElementById("sl-kelvin").addEventListener("input", e => {
+  state.kelvin = parseInt(e.target.value, 10);
+  syncUI();
+});
+document.getElementById("sl-key-angle").addEventListener("input", e => {
+  state.keyAngle = parseInt(e.target.value, 10);
+  syncUI();
+});
+
+// Camera Rig & Angles
+document.querySelectorAll("#angle-preset-btns .pill-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#angle-preset-btns .pill-btn").forEach(b => b.classList.toggle("active", b === btn));
+    const ang = btn.dataset.ang;
+    if (ang === "bird") { state.camHeight = 3.5; state.camPitch = -36; }
+    else if (ang === "high") { state.camHeight = 2.3; state.camPitch = -17; }
+    else if (ang === "eye") { state.camHeight = 1.62; state.camPitch = 0; }
+    else if (ang === "low") { state.camHeight = 0.82; state.camPitch = 16; }
+    else if (ang === "worm") { state.camHeight = 0.22; state.camPitch = 28; }
+    document.getElementById("tag-angle-preset").textContent = btn.textContent;
+    syncUI();
+  });
+});
+document.getElementById("sl-cam-y").addEventListener("input", e => { state.camHeight = parseFloat(e.target.value); syncUI(); });
+document.getElementById("sl-cam-pitch").addEventListener("input", e => { state.camPitch = parseFloat(e.target.value); syncUI(); });
+document.getElementById("sl-cam-yaw").addEventListener("input", e => { state.camYaw = parseFloat(e.target.value); syncUI(); });
+document.getElementById("sl-cam-roll").addEventListener("input", e => { state.camRoll = parseFloat(e.target.value); syncUI(); });
+document.getElementById("sl-cam-panx").addEventListener("input", e => { state.camPanX = parseFloat(e.target.value); syncUI(); });
+document.getElementById("sel-rig-motion").addEventListener("change", e => { state.rigMotion = e.target.value; });
+
+// Sensor & Digital Cinema Controls
+document.getElementById("sel-sensor").addEventListener("change", e => {
+  const s = SENSORS[e.target.value];
+  if (s) {
+    state.sensorKey = e.target.value;
+    state.sensorW = s.w;
+    state.sensorH = s.h;
+    state.cocLimit = s.coc;
+    syncUI();
+  }
+});
+document.getElementById("sl-coc").addEventListener("input", e => { state.cocLimit = parseFloat(e.target.value); syncUI(); });
+document.getElementById("sl-shutter").addEventListener("input", e => {
+  state.shutterAngle = parseInt(e.target.value, 10);
+  const denom = Math.round((24 * 360) / state.shutterAngle);
+  document.getElementById("val-shutter").textContent = `${state.shutterAngle}° (1/${denom}s @ 24fps)`;
+});
+document.getElementById("sl-nd").addEventListener("input", e => {
+  state.ndSteps = parseInt(e.target.value, 10);
+  document.getElementById("val-nd").textContent = state.ndSteps === 0 ? "Clear (0 pasos)" : `ND ${(state.ndSteps * 0.3).toFixed(1)} (${state.ndSteps} pasos)`;
+});
+document.getElementById("sl-grain").addEventListener("input", e => {
+  state.grain = parseInt(e.target.value, 10);
+  document.getElementById("val-grain").textContent = `${state.grain}%`;
+});
+
+// Direct Canvas Interaction: Click actor to select & focus, drag to orbit, wheel for focal
+let isDraggingMain = false, dragMoved = false, startX = 0, startY = 0;
+mainCanvas.addEventListener("mousedown", e => {
+  isDraggingMain = true;
+  dragMoved = false;
+  startX = e.clientX;
+  startY = e.clientY;
+});
+
+window.addEventListener("mousemove", e => {
+  if (!isDraggingMain) return;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  if (Math.hypot(dx, dy) > 4) dragMoved = true;
+  startX = e.clientX;
+  startY = e.clientY;
+
+  if (state.activeView === "camera") {
+    state.camYaw = Math.max(-180, Math.min(180, Math.round(state.camYaw + dx * 0.35)));
+    state.camPitch = Math.max(-45, Math.min(45, state.camPitch - dy * 0.2));
+    syncUI();
+  } else if (state.activeView === "stage3d") {
+    state.stageOrbitYaw += dx * 0.5;
+    state.stageOrbitPitch = Math.max(5, Math.min(75, state.stageOrbitPitch + dy * 0.35));
+  }
+});
+
+window.addEventListener("mouseup", e => {
+  if (isDraggingMain && !dragMoved && state.activeView === "camera") {
+    // Check if user clicked on a character in the viewfinder!
+    const rect = mainCanvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const mx = (e.clientX - rect.left) * dpr;
+    const my = (e.clientY - rect.top) * dpr;
+
+    for (let i = actorScreenBounds.length - 1; i >= 0; i--) {
+      const b = actorScreenBounds[i];
+      if (mx >= b.x1 && mx <= b.x2 && my >= b.y1 && my <= b.y2) {
+        state.selectedActorIdx = b.idx;
+        state.focusTarget = `actor_${b.idx}`;
+        syncUI();
+        break;
+      }
+    }
+  }
+  isDraggingMain = false;
+});
+
+mainCanvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  setFocal(state.focalLength + (e.deltaY > 0 ? -2 : 2));
+}, { passive: false });
+
+// Demo Vertigo 24mm vs 135mm
+let demoToggle = false;
+document.getElementById("btn-demo-vertigo").addEventListener("click", () => {
+  demoToggle = !demoToggle;
+  state.framingLock = "keep_framing";
+  setFocal(demoToggle ? 135 : 24);
+});
+
+// Reset
+document.getElementById("btn-reset-all").addEventListener("click", () => {
+  state.focalLength = 50;
+  state.aperture = 1.8;
+  state.squeeze = 1.0;
+  state.camYaw = 0;
+  state.camPitch = 0;
+  state.camRoll = 0;
+  state.camPanX = 0;
+  state.rigMotion = "static";
+  state.focusTarget = "actor_0";
+  applyShotPreset("MCU");
+});
+
+// Shot List Capture & CSV Export
+function renderShotList() {
+  const box = document.getElementById("shotlist-box");
+  box.innerHTML = "";
+  state.shotList.forEach((s, idx) => {
+    const div = document.createElement("div");
+    div.className = "shot-card";
+    div.innerHTML = `
+      <img class="shot-thumb" src="${s.thumb}" />
+      <div>
+        <div style="font-weight:700; color:var(--accent-hi); font-family:var(--font-mono); font-size:11px;">
+          #${idx + 1} · ${s.shotType} (${s.focalLength}mm T${s.aperture})
+        </div>
+        <div style="font-family:var(--font-mono); font-size:10px; color:#cbd5e1; margin-top:2px;">
+          Dist: ${s.camDist.toFixed(2)}m | Foco: ${s.focusDist.toFixed(2)}m<br/>
+          Locación: ${s.location} | Actores: ${s.actorCount}
+        </div>
+      </div>
+    `;
+    div.addEventListener("click", () => {
+      Object.assign(state, JSON.parse(JSON.stringify(s.saved)));
+      syncUI();
+    });
+    box.appendChild(div);
+  });
+}
+
+function captureShot() {
+  const saved = JSON.parse(JSON.stringify(state));
+  delete saved.shotList;
+  state.shotList.push({
+    shotType: state.shotType,
+    focalLength: state.focalLength,
+    aperture: state.aperture,
+    camDist: state.camDist,
+    focusDist: state.focusDist,
+    location: state.location,
+    actorCount: state.actors.length,
+    thumb: mainCanvas.toDataURL("image/jpeg", 0.75),
+    saved
+  });
+  renderShotList();
+}
+
+document.getElementById("btn-capture-shot").addEventListener("click", captureShot);
+
+document.getElementById("btn-export-csv").addEventListener("click", () => {
+  const hdr = ["Nro", "Plano", "Focal_mm", "Apertura_T", "Dist_m", "Foco_m", "Locacion", "Actores"];
+  const rows = state.shotList.map((s, i) => [i + 1, s.shotType, s.focalLength, s.aperture, s.camDist.toFixed(2), s.focusDist.toFixed(2), s.location, s.actorCount]);
+  const csv = [hdr.join(","), ...rows.map(r => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "planilla_camara_cineoptics.csv";
+  a.click();
+});
+
+// Animation Loop
+function animate(now) {
+  state.time = (now || 0) * 0.001;
+
+  if (state.rigMotion === "dolly_zoom") {
+    const wv = (Math.sin(state.time * 1.1) + 1) * 0.5;
+    state.framingLock = "keep_framing";
+    setFocal(Math.round(18 + wv * 115));
+  }
+
+  if (state.focusTarget === "rack_ab" && state.actors.length > 1) {
+    const wv = (Math.sin(state.time * 1.5) + 1) * 0.5;
+    const d0 = getActorActualDistance(state.actors[0]);
+    const d1 = getActorActualDistance(state.actors[1]);
+    state.focusDist = d0 + wv * (d1 - d0);
+    syncUI();
+  }
+
+  const { w, h, dpr } = resizeCanvas(mainCanvas);
+  if (state.activeView === "camera") {
+    renderCameraView(mainCtx, w, h, dpr);
+  } else if (state.activeView === "topdown") {
+    renderTopDownMap(mainCtx, w, h, dpr, true);
+  } else if (state.activeView === "stage3d") {
+    renderStage3DMap(mainCtx, w, h, dpr);
+  } else if (state.activeView === "side") {
+    renderSideElevationMap(mainCtx, w, h, dpr);
+  }
+
+  // Render PiP Radar if not minimized
+  const pip = document.getElementById("pip-radar");
+  if (!pip.classList.contains("minimized")) {
+    const pDim = resizeCanvas(pipCanvas);
+    renderTopDownMap(pipCtx, pDim.w, pDim.h, pDim.dpr, false);
+  }
+
+  requestAnimationFrame(animate);
+}
+
+window.addEventListener("load", () => {
+  applyShotPreset("MCU");
+  requestAnimationFrame(animate);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-13",
+  "source": "cine_shot_visualizer_3d_pro.html",
+  "sha256": "cbeb6cdbed013cfb246cf4e4a763ad50fce974fcb8a7d108912465326e88e04b",
+  "method": "Node VM; DOM y Canvas simulados. Sin validación visual, CSS, rendimiento ni eventos nativos.",
+  "observations": [
+    {
+      "id": "syntax",
+      "observed": "El script completo compila en Node. Esto no verifica APIs del navegador."
+    },
+    {
+      "id": "focus_after_delete",
+      "observed": {
+        "actors": 1,
+        "focusTarget": "actor_1",
+        "targetExists": false
+      }
+    },
+    {
+      "id": "partial_reset",
+      "observed": {
+        "location": "forest",
+        "sensorKey": "s16",
+        "grain": 55
+      }
+    },
+    {
+      "id": "stale_sensor_control",
+      "observed": {
+        "state": "s16",
+        "select": "ff",
+        "readout": "Super 16mm"
+      }
+    },
+    {
+      "id": "name_interpolated_as_html",
+      "observed": true
+    },
+    {
+      "id": "nd_shutter_grain_no_render_effect",
+      "observed": true
+    },
+    {
+      "id": "orbit_loses_origin_actor",
+      "observed": {
+        "yaw0": 1,
+        "yaw90": 0
+      }
+    },
+    {
+      "id": "focus_distance_vs_render_depth",
+      "observed": {
+        "autofocus": 2.102974084481309,
+        "renderDepthForYawPitchZero": 1.85
+      }
+    },
+    {
+      "id": "actor_width_ignores_squeeze",
+      "observed": {
+        "squeeze1": 222.11428571428564,
+        "squeeze2": 222.11428571428564
+      }
+    }
+  ]
+}
